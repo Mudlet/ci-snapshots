@@ -10,30 +10,6 @@ if(php_sapi_name() != 'cli') {
 define("CI_SNAPSHOTS", true);
 require_once("lib/init.php");
 
-if( isset($argv[1]) && $argv[1] == 'adduser'){
-    if( isset($argv[2]) ) {
-        $username = trim($argv[2]);
-    } else {
-        echo("Enter a Username: (max 120 characters): \n");
-        $fr=fopen("php://stdin","r");
-        $username = fgets($fr,128);
-        $username = rtrim($input);
-        fclose ($fr);
-    }
-    
-    echo("Enter a Password (max 128 bytes): \n");
-    
-    $fr=fopen("php://stdin","r");
-    $input = fgets($fr,128);
-    $input = rtrim($input);
-    fclose ($fr);
-
-    $hash = password_hash($input, PASSWORD_BCRYPT);
-    AddUserRecord( $username, $hash );
-    
-    exit();
-}
-
 
 // check the creation time of all files, remove any that are older than max life or are over their download limit.
 $stmt = $dbh->prepare("SELECT `id`, `file_name`, `file_key` FROM `Snapshots` 
