@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" href="https://make.mudlet.org/snapshots/favicon.ico">
+
+<link rel="stylesheet" href="tpl/css/fa5.8.2-all.min.css">
+
+<style>
+body,td,th {
+  font-family: "Open Sans", Arial, Helvetica, sans-serif;
+  font-size: 1em;
+  color: #000;
+}
+body {
+  background-color: #222;
+  margin-left: 0px;
+  margin-top: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+}
+img {
+  vertical-align: bottom;
+}
+
+a, a:link {
+  color: #a54b03;
+}
+a:visited {
+  color: #9a5c34;
+}
+a:hover, a:active {
+  color: #dc4c00;
+}
+
+header {
+  background: url('tpl/img/mudlet-header-bgtile.png');
+  border-bottom: 1px solid #eae1bb;
+  max-height: 80px;
+}
+header .logo-link {
+  display: inline-block;
+  margin-left: 16px;
+}
+header nav {
+  float: right;
+  margin-top: 16px;
+}
+header nav a {
+  display: inline-block;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1em;
+  margin-right: 12px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+section.bg-white {
+  background-color: #FFF;
+  display: inline-block;
+  width: 100%;
+}
+section.bg-white h1 {
+  margin-left: 12px;
+}
+
+footer {
+  color: #efefef;
+  padding: 12px;
+  font-size: 0.8em;
+}
+
+.filelist {
+  display: inline-flex;
+  flex-direction: column;
+  list-style-type: none;
+  list-style-position: initial;
+  list-style-image: initial;
+  padding: 0px;
+}
+.filelist-item {
+  flex: 1;
+  padding: 5px;
+  padding-left: 12px;
+}
+.filelist-item:nth-child(even) {
+  background: #efefef;
+}
+.fileinfo {
+  float: right;
+}
+.filesize {
+  width: 70px;
+  display: inline-block;
+  text-align: center;
+}
+.filedls {
+  width: 70px;
+  display: inline-block;
+  text-align: center;
+}
+.filetime {
+  width: 170px;
+  display: inline-block;
+  text-align: center;
+  word-spacing: 5px;
+}
+.filegitlinks {
+  width: 70px;
+  display: inline-block;
+  text-align: center;
+}
+.filegitlinks a {
+  margin-right: 12px;
+}
+.filegitlinks a:last-child {
+  margin-right: 0px;
+}
+
+.hinfo {
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1em;
+  list-style-type: none;
+  list-style-position: initial;
+  list-style-image: initial;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgb(170,170,170);
+}
+.hinfo .filetime {
+  text-align: center;
+}
+
+</style>
+<title>Mudlet Pull-Request Snapshots</title>
+
+</head>
+<body>
+<header>
+  <a class="logo-link" href="{SITE_URL}"><img src="tpl/img/mudlet-wp-logo.png" alt="Mudlet Logo" title="Mudlet Logo" /></a>
+  <nav>
+    <a href="https://www.mudlet.org/">Home</a>
+    <a href="https://wiki.mudlet.org/">Wiki</a>
+    <a href="https://forums.mudlet.org/">Forum</a>
+  </nav>
+</header>
+<section class="bg-white">
+  <h1>Available Snapshot Files</h1>
+  {pg_content}
+</section>
+<footer>
+  All times are in {pg_timezone} - {pg_size_listed} Storage Used
+</footer>
+
+</body>
+</html>

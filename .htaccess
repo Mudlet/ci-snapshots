@@ -1,0 +1,89 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /snapshots/
+
+## If the current requesting IP is in our IP safelist the "ALLOWED" ENV var is set to 1.
+UnsetEnv ALLOWED
+RewriteRule .* - [E=ALLOWED:0]
+RewriteCond ${allowed:%{REMOTE_ADDR}}	1
+RewriteRule ^ - [E=ALLOWED:1]
+
+
+## This rule only applies to PUT method requests.
+RewriteCond %{REQUEST_METHOD} PUT
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{ENV:ALLOWED} 1
+RewriteRule . /snapshots/put.php [L]
+
+## This prevents access to put.php in any other method but PUT.
+RewriteCond %{REQUEST_METHOD} !PUT
+RewriteRule ^put.php /snapshots/index.php [L]
+
+## This sets up /knock/ for checking requesting IPs.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{ENV:ALLOWED} 0
+RewriteRule ^knock/?(.+)$ /snapshots/knock.php?fname=$1 [L,NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{ENV:ALLOWED} 1
+RewriteRule ^knock/?(.+)$ /snapshots/knock.php?known=1 [L,NC]
+
+## These directories may change depending on configs.
+## This prevents direct access to these directories and files.
+RewriteRule ^files/?.*$ /snapshots/index.php [L]
+RewriteRule ^tmp/?.*$ /snapshots/index.php [L]
+RewriteRule ^lib/?.*$ /snapshots/index.php [L]
+
+## This sets up our file download link.
+RewriteCond %{REQUEST_METHOD} GET
+RewriteRule ^([a-f0-9]+)/([^/]+)$ /snapshots/index.php?dl=$1_$2 [L]
+
+## Finally, route all other requests back to index.
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_METHOD} !=PUT
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /snapshots/index.php [L]
+</IfModule>
+
+## These directives ensure access to special files is disabled.
+<files config.php>
+	<IfModule mod_authz_core.c>
+		Require all denied
+	</IfModule>
+	<IfModule !mod_authz_core.c>
+		Order allow,deny
+		Deny from all
+	</IfModule>
+</files>
+
+<files ip_list>
+	<IfModule mod_authz_core.c>
+		Require all denied
+	</IfModule>
+	<IfModule !mod_authz_core.c>
+		Order allow,deny
+		Deny from all
+	</IfModule>
+</files>
+
+<files *log>
+	<IfModule mod_authz_core.c>
+		Require all denied
+	</IfModule>
+	<IfModule !mod_authz_core.c>
+		Order allow,deny
+		Deny from all
+	</IfModule>
+</files>
+
+<files tmp/*>
+	<IfModule mod_authz_core.c>
+		Require all denied
+	</IfModule>
+	<IfModule !mod_authz_core.c>
+		Order allow,deny
+		Deny from all
+	</IfModule>
+</files>
