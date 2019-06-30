@@ -29,7 +29,7 @@ function ExitFullStorage() {
     exit();
 }
 
-if( !isset($_SERVER['PHP_AUTH_USER']) && PUT_REQUIRES_AUTH ){ 
+if( (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) && PUT_REQUIRES_AUTH ){ 
     ExitUnauthorized();
 }
 
@@ -38,12 +38,9 @@ define("CI_SNAPSHOTS", true);
 require_once('lib/init.php');
 
 
-// test given auth against config values.
+// test given auth credentials.
 if( PUT_REQUIRES_AUTH ) {
-    if( $_SERVER['PHP_AUTH_USER'] !== AUTH_USER) {
-        ExitForbidden(); 
-    }
-    if( !password_verify($_SERVER['PHP_AUTH_PW'], AUTH_PASS) ) {
+    if( !CheckUserCredentials($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) ) {
         ExitForbidden();
     }
 }
