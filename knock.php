@@ -1,9 +1,6 @@
 <?php
 
-if( !isset($_GET['fname']) && !isset($_GET['known']) ) {
-    exit();
-} 
-elseif( isset($_GET['known']) ) {
+if( isset($_GET['known']) ) {
     echo("Known\n");
 }
 else {

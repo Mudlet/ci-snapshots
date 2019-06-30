@@ -24,10 +24,10 @@ RewriteRule ^put.php /snapshots/index.php [L]
 ## This sets up /knock/ for checking requesting IPs.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{ENV:ALLOWED} 0
-RewriteRule ^knock/?(.+)$ /snapshots/knock.php?fname=$1 [L,NC]
+RewriteRule ^knock/?.*$ /snapshots/knock.php [L,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{ENV:ALLOWED} 1
-RewriteRule ^knock/?(.+)$ /snapshots/knock.php?known=1 [L,NC]
+RewriteRule ^knock/?.*$ /snapshots/knock.php?known=1 [L,NC]
 
 ## These directories may change depending on configs.
 ## This prevents direct access to these directories and files.
