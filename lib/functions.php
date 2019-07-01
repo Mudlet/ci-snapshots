@@ -164,12 +164,43 @@ function CreateUsersTable() {
     $sql = "CREATE TABLE `Users` (
     `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
     `name` VARCHAR(128) NOT NULL DEFAULT 'NULL',
-    `email` VARCHAR(255) NOT NULL DEFAULT 'NULL',
     `phash` VARCHAR(255) NOT NULL DEFAULT 'NULL',
     PRIMARY KEY (`id`)
     );";
     
     $res = $dbh->query($sql);
+}
+
+function CheckUserCredentials($name, $pass) {
+    global $dbh;
+    
+    if( empty($name) || empty($pass) ) {
+        return false;
+    }
+    
+    $stmt = $dbh->prepare("SELECT `id`,`phash` FROM `Users` WHERE `name`=:user");
+    $stmt->bindParam(':user', $name);
+    $r = $stmt->execute();
+    if( !$r ) {
+        return false;
+    }
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if( !password_verify($pass, $res['phash']) ) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+function AddUserRecord($username, $passhash) {
+    global $dbh;
+    
+    $stmt = $dbh->prepare("INSERT INTO `Users` (`name`, `phash`) VALUES (:name, :phash);");
+    $stmt->bindParam(':name', $username);
+    $stmt->bindParam(':phash', $passhash);
+    
+    return $stmt->execute();
 }
 
 function ExitFailedRequest($msg) {
