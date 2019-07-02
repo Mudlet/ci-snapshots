@@ -3,7 +3,7 @@
  * Plugin Name: Mudlet Snapshots
  * Plugin URI:  https://make.mudlet.org/snapshots/
  * Description: Provides Tools for managing Mudlet Snapshots.
- * Version:     20190630
+ * Version:     20190701
  * License:     GPL2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
