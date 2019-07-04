@@ -183,6 +183,11 @@ class MudletSnapsUsers_ListTable extends MudletSnapshots_WP_List_Table {
         if( ( isset( $_POST['action'] ) && $_POST['action'] == 'bulk-delete' )
            || ( isset( $_POST['action2'] ) && $_POST['action2'] == 'bulk-delete' ) ) 
         {
+            $nonce = esc_attr( $_REQUEST['_wpnonce'] );
+            if ( ! wp_verify_nonce( $nonce, 'bulk-' . $this->_args['plural'] ) ) {
+                exit( 'LOOK AT ALL THESE CHICKENS!' );
+            }
+            
             if( !isset($_POST['bulk-delete']) ) {
                 wp_redirect("?page=mudlet-snapshots");
                 exit();
@@ -199,6 +204,35 @@ class MudletSnapsUsers_ListTable extends MudletSnapshots_WP_List_Table {
 }
 
 
+$mudletsnaps_nonce_calls = 0;
+function mudletsnaps_nonce_field($action) {
+    global $mudletsnaps_nonce_calls;
+    $mudletsnaps_nonce_calls = $mudletsnaps_nonce_calls + 1;
+    $nonce_calls = strval($mudletsnaps_nonce_calls);
+    $field = wp_nonce_field($action, '_wpnonce', true, false);
+    $find  = 'id="_wpnonce"';
+    $repl  = 'id="_wpnonce_'.$nonce_calls.'"';
+    $field = str_replace($find, $repl, $field);
+    
+    echo $field;
+}
+
+function mudletsnaps_getMaxCapacityConfig() {
+    global $mudletsnaps_config;
+    $confFile = $mudletsnaps_config['snapshot_root'] . 'config.php';
+    if (is_file($confFile)) {
+        $content = file_get_contents($confFile);
+        preg_match('/define\(\'MAX_CAPACITY_BYTES\', ([0-9]+)\);/i', $content, $m);
+        
+        if (isset($m[1])) {
+            echo mudletsnaps_human_filesize(intval($m[1]));
+        } else {
+            echo 'Unknown!';
+        }
+    } else {
+        echo 'Unknown';
+    }
+}
 
 function mudletsnaps_getSnapshotPDO_DB() {
     global $mudletsnaps_config;
@@ -217,10 +251,6 @@ function mudletsnaps_getSnapshotPDO_DB() {
     catch (PDOException $e) {
         return false;
     }
-}
-
-function mudletsnaps_getUserList() {
-    return false;
 }
 
 function mudletsnaps_getUserByName($name) {
@@ -297,18 +327,6 @@ function mudletsnaps_editUserPass($id, $hash) {
     }
 }
 
-function mudletsnaps_deleteUser($id) {
-    $dbh = mudletsnaps_getSnapshotPDO_DB();
-    if( $dbh == false ) {
-        echo("Error Connecting with Snapshot Database!");
-        return false;
-    } else {
-        $stmt = $dbh->prepare("DELETE FROM `Users` WHERE `id`=:uid;");
-        $stmt->bindParam(':uid', $id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-}
-
 function mudletsnaps_human_filesize($bytes, $decimals = 2) {
     $sz = 'BKMGT';
     $factor = floor((strlen($bytes) - 1) / 3);
@@ -346,6 +364,29 @@ function mudletsnaps_getSnapshotFileStats($humanFileSize=true) {
     } else {
         return array($totalCount, $totalSize, $dir);
     }
+}
+
+function mudletsnaps_massDeleteSnapshotFiles() {
+    global $mudletsnaps_config;
+    
+    $file_dir = $mudletsnaps_config['snapshot_root'] . $mudletsnaps_config['snapshot_files'] ;
+    $dir_list = scandir($file_dir);
+    $fileCount = 0;
+    foreach($dir_list as $idx => $file) {
+        if( $file == '.' || $file == '..' ) {
+            continue;
+        }
+        $filepath = $file_dir . $file;
+        if( is_dir($filepath) ) {
+            continue;
+        }
+        
+        if( is_file($filepath) ) {
+            $fileCount = $fileCount + 1;
+            @unlink($filepath);
+        }
+    }
+    return $fileCount;
 }
 
 
@@ -416,6 +457,14 @@ function mudletsnaps_admin_notices() {
     </div>
     <?php }
     
+    if( isset($_GET['removed']) ) {
+      $rmCount = strval(intval($_GET['removed']));
+    ?>
+    <div class="notice notice-success is-dismissible">
+        <p>Successfully removed <?php echo $rmCount; ?> file(s) from the server!</p>
+    </div>
+    <?php }
+    
 }
 add_action('admin_notices', 'mudletsnaps_admin_notices' );
 
@@ -448,7 +497,7 @@ function mudletsnaps_tool_page_edit_form() {
       <label><strong>User ID:</strong> <em><?php echo($userId); ?></em></label><br/>
       <input type="hidden" id="user" name="user" value="<?php esc_attr_e($userId); ?>" />
       <input type="hidden" id="action" name="action" value="edituser" />
-      <?php wp_nonce_field('mudlet-snapshots'); ?>
+      <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
       <label><strong>Username:</strong> <input type="text" id="username" name="username" value="<?php esc_attr_e($userData['name']); ?>" /></label><br/>
       <label><strong>Password:</strong> <input type="password" id="password" name="password" value="" /></label><br/>
       <input name="Submit" type="submit" value="Save Changes" />
@@ -463,6 +512,14 @@ function mudletsnaps_tool_page_base_forms() {
     $fstats = mudletsnaps_getSnapshotFileStats();
     ?>
     <style type="text/css">
+      input[type=submit].dangerous {
+        border: 1px solid rgb(206, 161, 161);
+        background: rgb(255, 228, 228);
+      }
+      input[type=submit].dangerous:hover {
+        border-color: #ff8585;
+        color: #8e0404;
+      }
       .wp-list-table .column-id {
         min-width: 4%;
         max-width: 8%;
@@ -478,44 +535,57 @@ function mudletsnaps_tool_page_base_forms() {
           content: none;
         }
       }
-            
     </style>
+    <script type="text/javascript">
+      jQuery(document).ready(function(){
+        jQuery("#mdsubmit").click(function(ev){
+          var r = confirm("Really Delete ALL Snapshot Files?");
+          if( r == false ) {
+            ev.preventDefault();
+            return false;
+          }
+        });
+      });
+    </script>
     <div class="wrap">
-    <h1>Mudlet Snapshots Tools</h1>
-    <?php if($fstats !== false) { ?>
-    <span class="filestats">
-      <strong>Files On Disk:</strong> &nbsp; <em><?php echo($fstats[0]); ?></em><br/>
-      <strong>Size On Disk:</strong> &nbsp; <em><?php echo($fstats[1]); ?></em><br/>
-      <strong>Storage Location:</strong> &nbsp; <em><?php echo($fstats[2]); ?></em><br/>
-    </span>
-    <hr/>
-    <?php } ?>
-    
-    <!-- TODO:  Mass-Delete option -->
-    <!-- TODO:  List, Add, Edit, & Delete of Snapshot Users -->
-    <form action="tools.php?page=mudlet-snapshots" method="post">
-      <input type="hidden" id="action" name="action" value="massdelete_files" />
-      <?php wp_nonce_field('mudlet-snapshots'); ?>
-      <input name="Submit" type="submit" value="Mass Delete Snapshots" />
-    </form>
-    <hr/>
-    
-    <h2>Snapshot User List</h2>
-    <form action="tools.php?page=mudlet-snapshots" method="post">
-      <?php $tbl->prepare_items();
-            $tbl->display(); ?>
-    </form>
-    <hr/>
-    
-    <h2>Add New Snapshot User</h2>
-    <form action="tools.php?page=mudlet-snapshots" method="post">
-      <input type="hidden" id="action" name="action" value="adduser"/>
-      <?php wp_nonce_field('mudlet-snapshots'); ?>
-      <label>Username: <input type="text" id="username" name="username" value="" /></label>
-      <label>Password: <input type="password" id="password" name="password" value="" /></label>
-      <input name="Submit" type="submit" value="Add New User" />
-    </form>
-    
+        <h1>Mudlet Snapshots Tools</h1>
+        <?php if($fstats !== false) { ?>
+        <h2>Snapshot Storate Stats</h2>
+        <span class="filestats">
+          <strong>Files On Disk:</strong> &nbsp; <em><?php echo($fstats[0]); ?></em><br/>
+          <strong>Size On Disk:</strong> &nbsp; <em><?php echo($fstats[1]); ?></em><br/>
+          <strong>Storage Location:</strong> &nbsp; <em><?php echo($fstats[2]); ?></em><br/>
+          <strong>Storage Capacity:</strong> &nbsp; <em><?php mudletsnaps_getMaxCapacityConfig(); ?></em><br/>
+        </span>
+        <hr/>
+        <?php } ?>
+        
+        <h2>Snapshot User List</h2>
+        <form action="tools.php?page=mudlet-snapshots" method="post">
+          <?php $tbl->prepare_items();
+                $tbl->display(); ?>
+        </form>
+        <hr/>
+        
+        <h2>Add New Snapshot User</h2>
+        <form action="tools.php?page=mudlet-snapshots" method="post">
+          <input type="hidden" name="action" value="adduser"/>
+          <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
+          <label>Username: <input type="text" id="username" name="username" value="" autocomplete="username" /></label>
+          <label>Password: <input type="password" id="password" name="password" value="" autocomplete="new-password" /></label>
+          <input class="button action" name="Submit" type="submit" value="Add New User" />
+        </form>
+        <hr/>
+        
+        <h2>Snapshot Management<h2/>
+        <form action="tools.php?page=mudlet-snapshots" method="post">
+          <input type="hidden" name="action" value="massdelete_files" />
+          <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
+          <p>Press the button below to immediately delete ALL snapshots from the server.<br/></p>
+          <input class="button action dangerous" name="Submit" type="submit" value="Mass Delete Snapshots" id="mdsubmit" />
+        </form>
+        <hr/>
+        
     </div>
     <?php
 }
@@ -526,9 +596,9 @@ function mudletsnaps_tool_page_post() {
         $action = strtolower($_POST['action']);
         switch($action) {
             case 'massdelete_files':
-                // should we add an "Are You Sure?" here?
-                print("Just kidding, this is WIP and not yet working!");
-                wp_redirect( "?page=mudlet-snapshots" );
+                $fileCount = mudletsnaps_massDeleteSnapshotFiles();
+                
+                wp_redirect( "?page=mudlet-snapshots&removed={$fileCount}" );
                 exit();
             break;
             case 'edituser':
