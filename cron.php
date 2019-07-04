@@ -75,3 +75,29 @@ if( $totalStranded > 0 ) {
     $totalSizeStr = human_filesize($totalSize);
     print("Removed {$totalStranded} Expired files ({$totalSizeStr})\n\n");
 }
+
+
+// check that storage isn't using over MAX_CAPACITY_BYTES
+$dirSize = getSnapshotDirectorySize();
+if( $dirSize > MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == true ) {
+    $targetSize = ($dirSize - MAX_CAPACITY_BYTES);
+    $clearedSize = 0;
+    
+    $stmt = $dbh->prepare("SELECT `file_name`, `file_key`, `time_created` 
+                           FROM `Snapshots`
+                           ORDER BY `time_created` ASC
+                           LIMIT 10 ");
+    $stmt->execute();
+    
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $delFilePath = getSnapshotFilePath($row['file_name'], $row['file_key']);
+        if( is_file($delFilePath) ) {
+            $clearedSize = $clearedSize + filesize($delFilePath);
+            unlink($delFilePath);
+        }
+        
+        if( $clearedSize >= $targetSize ) {
+            break;
+        }
+    }
+}
