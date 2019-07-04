@@ -550,7 +550,7 @@ function mudletsnaps_tool_page_base_forms() {
     <div class="wrap">
         <h1>Mudlet Snapshots Tools</h1>
         <?php if($fstats !== false) { ?>
-        <h2>Snapshot Storate Stats</h2>
+        <h2>Snapshot Storage Stats</h2>
         <span class="filestats">
           <strong>Files On Disk:</strong> &nbsp; <em><?php echo($fstats[0]); ?></em><br/>
           <strong>Size On Disk:</strong> &nbsp; <em><?php echo($fstats[1]); ?></em><br/>
