@@ -21,7 +21,7 @@ define("ALLOWED_FILE_EXT", "exe,msi,bin,dmg,zip,tar,gz,tz,xz,AppImage");
 
 // The maximum storage space set aside for this software.
 // Any storage over this amount is pruned by oldest file first.
-define("MAX_CAPACITY_BYTES", 10737420000);
+define("MAX_CAPACITY_BYTES", 37580960000);
 
 // Toggle PUT response when MAX_CAPACITY_BYTES is reached.
 //  True - delete the oldest stored snapshot(s) to make space for new file.
