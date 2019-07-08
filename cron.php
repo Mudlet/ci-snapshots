@@ -82,22 +82,43 @@ $dirSize = getSnapshotDirectorySize();
 if( $dirSize > MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == true ) {
     $targetSize = ($dirSize - MAX_CAPACITY_BYTES);
     $clearedSize = 0;
+    $totalClearedFiles = 0;
+    $totalClearedRecords = 0;
     
-    $stmt = $dbh->prepare("SELECT `file_name`, `file_key`, `time_created` 
+    $sizeOverStr = human_filesize($targetSize);
+    $sizeMaxStr = human_filesize(MAX_CAPACITY_BYTES);
+    echo "Snapshot Storage is at maximum capacity! - {$sizeOverStr} over the max of {$sizeMaxStr}\n";
+    
+    $stmt = $dbh->prepare("SELECT `id`, `file_name`, `file_key`, `time_created` 
                            FROM `Snapshots`
                            ORDER BY `time_created` ASC
-                           LIMIT 10 ");
+                           LIMIT 20 ");
     $stmt->execute();
     
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $delFilePath = getSnapshotFilePath($row['file_name'], $row['file_key']);
         if( is_file($delFilePath) ) {
             $clearedSize = $clearedSize + filesize($delFilePath);
+            $totalClearedFiles = $totalClearedFiles + 1;
             unlink($delFilePath);
+            RemoveSnapshotByID($row['id']);
+        } else {
+            // File not found, we should remove this record!
+            $totalClearedRecords = $totalClearedRecords + 1;
+            RemoveSnapshotByID($row['id']);
         }
         
         if( $clearedSize >= $targetSize ) {
             break;
         }
     }
+    
+    if( $totalClearedRecords > 0 ) {
+        print("Removed {$totalClearedRecords} record(s) with missing files\n");
+    }
+    if( $totalClearedFiles > 0 ) {
+        $totalSizeStr = human_filesize($clearedSize);
+        print("Removed {$totalClearedFiles} old snapshots ({$totalSizeStr}) \n\n");
+    }
 }
+
