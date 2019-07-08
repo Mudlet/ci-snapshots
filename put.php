@@ -113,6 +113,7 @@ if( rename($tmpname, $snapshot_path) ) {
     echo("\n"); 
     
     AddNewSnapshot($basename, $snapshot_uid, $maxdays, $maxdl);
+    AddUploadLogRecord($snapshot_path);
     
 } else {
     ExitFailedRequest("Failed to save {$basename}\n");

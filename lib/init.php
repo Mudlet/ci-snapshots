@@ -4,6 +4,9 @@ if( !defined("CI_SNAPSHOTS") ){
     exit();
 }
 
+session_start();
+$_SESSION['mudletsnaps_user_id'] = 0;
+
 require_once("config.php");
 require_once("lib/functions.php");
 
@@ -32,6 +35,18 @@ if( ! SnapshotsTableExists() ) {
 
 if( ! UsersTableExists() ) {
     CreateUsersTable();
+    header("Location: " . SITE_URL);
+    exit();
+}
+
+if( ! LogUploadsTableExists() ) {
+    CreateLogUploadsTable();
+    header("Location: " . SITE_URL);
+    exit();
+}
+
+if( ! LogDownloadsTableExists() ) {
+    CreateLogDownloadsTable();
     header("Location: " . SITE_URL);
     exit();
 }

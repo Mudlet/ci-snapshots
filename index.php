@@ -29,6 +29,7 @@ if( isset($_GET['dl']) ) {
             $file = @fopen($dl_filepath, "rb");
             if( $file !== false && $size !== false ) {
                 UpdateSnapshotDownloads($dl_sid);
+                AddDownloadLogRecord($dl_filepath);
                 
                 header('Content-Type: application/octet-stream');
                 header("Content-Length: ${size}");

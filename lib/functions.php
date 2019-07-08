@@ -189,6 +189,9 @@ function CheckUserCredentials($name, $pass) {
     if( !password_verify($pass, $res['phash']) ) {
         return false;
     } else {
+        if( session_status() == PHP_SESSION_ACTIVE ){
+            $_SESSION['mudletsnaps_user_id'] = $res['id'];
+        }
         return true;
     }
 }
@@ -199,6 +202,114 @@ function AddUserRecord($username, $passhash) {
     $stmt = $dbh->prepare("INSERT INTO `Users` (`name`, `phash`) VALUES (:name, :phash);");
     $stmt->bindParam(':name', $username);
     $stmt->bindParam(':phash', $passhash);
+    
+    return $stmt->execute();
+}
+
+function LogUploadsTableExists() {
+    global $dbh;
+    
+    $tbl_result = false;
+    try {
+        $tbl_result = $dbh->query("SELECT 1 FROM `LogUploads` LIMIT 1");
+    } catch (PDOException $e) {
+        return false;
+    }
+    return $tbl_result !== false;
+}
+
+function CreateLogUploadsTable() {
+    global $dbh;
+    
+    $sql = 'CREATE TABLE `LogUploads` (
+      `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+      `user_id` INTEGER NOT NULL DEFAULT 0,
+      `file_size` INTEGER NOT NULL,
+      `event_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `file_name` VARCHAR(255) NOT NULL,
+      `ip_addr` VARCHAR(39) NOT NULL,
+      PRIMARY KEY (`id`)
+    );';
+    
+    $res = $dbh->query($sql);
+}
+
+function AddUploadLogRecord($filepath) {
+    global $dbh;
+    
+    if( !is_file($filepath) || ! is_readable($filepath) ) {
+        return false;
+    }
+    
+    $filename = basename($filepath);
+    $filesize = filesize($filepath);
+    $user_id = 0;
+    if( session_status() == PHP_SESSION_ACTIVE ) {
+        $user_id = $_SESSION['mudletsnaps_user_id'];
+    }
+    
+    $stmt = $dbh->prepare(
+        'INSERT INTO `LogUploads` (`user_id`, `file_size`, `file_name`, `ip_addr`) 
+         VALUES (:uid, :size, :fname, :ip);'
+    );
+    $stmt->bindParam(':uid', $user_id, PDO::PARAM_INT);
+    $stmt->bindParam(':size', $filesize, PDO::PARAM_INT);
+    $stmt->bindParam(':fname', $filename, PDO::PARAM_STR);
+    $stmt->bindParam(':ip', $_SERVER['REMOTE_ADDR'], PDO::PARAM_STR);
+    
+    return $stmt->execute();
+}
+
+function LogDownloadsTableExists() {
+    global $dbh;
+    
+    $tbl_result = false;
+    try {
+        $tbl_result = $dbh->query("SELECT 1 FROM `LogDownloads` LIMIT 1");
+    } catch (PDOException $e) {
+        return false;
+    }
+    return $tbl_result !== false;
+}
+
+function CreateLogDownloadsTable() {
+    global $dbh;
+    
+    $sql = 'CREATE TABLE `LogDownloads` (
+      `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+      `user_id` INTEGER NOT NULL DEFAULT 0,
+      `file_size` INTEGER NOT NULL,
+      `event_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `file_name` VARCHAR(255) NOT NULL,
+      `ip_addr` VARCHAR(39) NOT NULL,
+      PRIMARY KEY (`id`)
+    );';
+    
+    $res = $dbh->query($sql);
+}
+
+function AddDownloadLogRecord($filepath) {
+    global $dbh;
+    
+    if( !is_file($filepath) || ! is_readable($filepath) ) {
+        return false;
+    }
+    
+    $filename = basename($filepath);
+    $filesize = filesize($filepath);
+    $user_id = 0;
+    if( session_status() == PHP_SESSION_ACTIVE ) {
+        $user_id = $_SESSION['mudletsnaps_user_id'];
+    }
+    
+    $stmt = $dbh->prepare(
+        'INSERT INTO `LogDownloads` (`user_id`, `file_size`, `file_name`, `ip_addr`) 
+         VALUES (:uid, :size, :fname, :ip);'
+    );
+    $stmt->bindParam(':uid', $user_id, PDO::PARAM_INT);
+    $stmt->bindParam(':size', $filesize, PDO::PARAM_INT);
+    $stmt->bindParam(':fname', $filename, PDO::PARAM_STR);
+    $stmt->bindParam(':ip', $_SERVER['REMOTE_ADDR'], PDO::PARAM_STR);
     
     return $stmt->execute();
 }
