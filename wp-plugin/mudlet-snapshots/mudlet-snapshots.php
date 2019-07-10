@@ -13,8 +13,9 @@ defined('ABSPATH') or exit();
 
 
 $mudletsnaps_config = array();
-$mudletsnaps_config['snapshot_root'] = '';
+$mudletsnaps_config['snapshot_root'] = '/path/to/snapshots/';
 $mudletsnaps_config['snapshot_files'] = 'files/';
+$mudletsnaps_config['safelist_file'] = '/path/to/ip_list';
 $mudletsnaps_config['db_host'] = '';
 $mudletsnaps_config['db_name'] = '';
 $mudletsnaps_config['db_user'] = '';
@@ -725,6 +726,84 @@ function mudletsnaps_getStatsSelectBox($types, $selected, $name='stats_type', $e
     }
 }
 
+function mudletsnaps_setIpListFromDataArray($data) {
+    global $mudletsnaps_config;
+    $ipListFile = $mudletsnaps_config['safelist_file'];
+    
+    $io = fopen($ipListFile, 'w');
+    foreach($data as $idx => $lineparts) {
+        $ip = $lineparts[0]; 
+        $comment = $lineparts[1];
+        if(!empty($comment)) {
+            $comment = "\t# {$comment}";
+        }
+        $line = "{$ip}\t1{$comment}\n";
+        fwrite($io, $line);
+    }
+    fclose($io);
+}
+
+function mudletsnaps_getIpListDataArray() {
+    global $mudletsnaps_config;
+    $ipListFile = $mudletsnaps_config['safelist_file'];
+    
+    $data = array();
+    $io = fopen($ipListFile, 'r');
+    while($line = fgets($io)) {
+        preg_match('/([0-9a-f\.:]+)\t1(?:\t#\s*(.+))?/i', $line, $m);
+        if(count($m) == 2) {
+            $data[] = array($m[1], '');
+        }
+        if(count($m) == 3) {
+            $data[] = array($m[1], $m[2]);
+        }
+    }
+    fclose($io);
+    return $data;
+}
+
+function mudletsnaps_getIpListDataArrayFromText($text) {
+    $data = array();
+    $lines = preg_split('/\r\n|\r|\n/', $text);
+    foreach($lines as $idx => $line) {
+        preg_match('/([0-9a-f\.:]+)(?:\s*#\s*(.+))?/i', $line, $m);
+        if(count($m) == 2) {
+            $ip = trim($m[1]);
+            $data[] = array($ip, '');
+        }
+        if(count($m) == 3) {
+            $comment = trim($m[2]);
+            $ip = trim($m[1]);
+            $data[] = array($ip, $comment);
+        }
+    }
+    return $data;
+}
+
+function mudletsnaps_getIpListEditorText() {
+    global $mudletsnaps_config;
+    $ipListFile = $mudletsnaps_config['safelist_file'];
+    
+    if( !is_file($ipListFile) || !is_readable($ipListFile)) {
+        echo 'IP Safelist file is not Readable!';
+    }
+    
+    if( !is_writable($ipListFile) ) {
+        echo 'IP Safelist file is not Writable!';
+    }
+    
+    $data = mudletsnaps_getIpListDataArray();
+    $lines = '';
+    foreach($data as $idx => $line) {
+        $comment = '';
+        if(!empty($line[1])) {
+            $comment = "\t# ".$line[1];
+        }
+        $lines .= $line[0] . $comment . "\n";
+    }
+    echo $lines;
+}
+
 
 function mudletsnaps_admin_init() {
     global $pagenow;
@@ -873,6 +952,12 @@ function mudletsnaps_tool_page_base_forms() {
     
     ?>
     <style type="text/css">
+      form textarea {
+        display: block;
+        margin-bottom: 8px;
+        width: 80%;
+        font-family: "Courier New", Courier, "Lucida Console", Monaco, monospace;
+      }
       input[type=submit].dangerous {
         border: 1px solid rgb(206, 161, 161);
         background: rgb(255, 228, 228);
@@ -895,12 +980,37 @@ function mudletsnaps_tool_page_base_forms() {
         .wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.column-primary)::before {
           content: none;
         }
+        
+        form textarea {
+          width: 100%;
+        }
+      }
+      
+      p code {
+        background: rgba(0,0,0,0.09);
+        color: #257325;
+      }
+      .form-note {
+        color: #5a5a5a;
+        font-size: 0.9em;
+        display: block;
+        margin-left: 8px;
+        margin-top: 4px;
+        margin-bottom: 4px;
       }
     </style>
     <script type="text/javascript">
       jQuery(document).ready(function(){
         jQuery("#mdsubmit").click(function(ev){
           var r = confirm("Really Delete ALL Snapshot Files?");
+          if( r == false ) {
+            ev.preventDefault();
+            return false;
+          }
+        });
+        
+        jQuery("#ipsubmit").click(function(ev){
+          var r = confirm("Really Update the IP Safelist?");
           if( r == false ) {
             ev.preventDefault();
             return false;
@@ -1025,12 +1135,26 @@ function mudletsnaps_tool_page_base_forms() {
         </form>
         <hr/>
         
+        <h2>Snapshot IP Safelist</h2>
+        <form action="tools.php?page=mudlet-snapshots" method="post">
+          <input type="hidden" name="action" value="iplist_edit" />
+          <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
+          <p>Use the text area below to update the IP safe list for Snapshot uploads.<br/>
+          One IP address per line, may be IPv4 or IPv6. Optional Comments must follow the IP using a <code>#</code> character.<br/>
+          Example: <code>127.0.0.1 # some comment added on 1970-01-01 01:10:11</code></p>
+          <textarea rows="16" cols="72" name="ip_safelist"><?php mudletsnaps_getIpListEditorText(); ?></textarea>
+          <span class="form-note">Lines with invalid formatting will be silently discarded!</span>
+          <input class="button action dangerous" name="Submit" type="submit" value="Update IP Safelist" id="ipsubmit"/>
+        </form>
+        <hr/>
+        
         <h2>Snapshot Usage Stats</h2>
         <form action="tools.php?page=mudlet-snapshots" method="get">
           <input type="hidden" name="page" value="mudlet-snapshots"/>
           <label>Time Period: <input name="stats_ago" value="<?php echo $statsDaysAgo; ?>" type="number" min="1" max="120"/></label>
           <?php mudletsnaps_getStatsSelectBox($statsByTypes, $statsByType); ?>
           <input class="button action" type="submit" value="Change" />
+          <span class="form-note">Times shown are recorded and displayed in <?php echo date_default_timezone_get(); ?></span>
         </form>
         <canvas id="dlStatsChart" width="400" height="200"></canvas>
         <hr/>
@@ -1094,6 +1218,24 @@ function mudletsnaps_tool_page_post() {
                 mudletsnaps_addUser($_POST['username'], $hash);
                 
                 wp_redirect( "?page=mudlet-snapshots&done=added" );
+                exit();
+            break;
+            case 'iplist_edit':
+                if( !isset($_POST['ip_safelist']) ) {
+                    wp_die("Invalid Request - Missing IP Safelist Data!");
+                } else {
+                    $text = trim($_POST['ip_safelist']);
+                    if( empty($text) ) {
+                       wp_die("Invalid Request - Missing IP Safelist Data!"); 
+                    }
+                }
+                
+                $text = stripslashes($_POST['ip_safelist']);
+                
+                $data = mudletsnaps_getIpListDataArrayFromText($text);
+                mudletsnaps_setIpListFromDataArray($data);
+                
+                wp_redirect( '?page=mudlet-snapshots' );
                 exit();
             break;
         }
