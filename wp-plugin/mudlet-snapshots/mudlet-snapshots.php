@@ -3,7 +3,7 @@
  * Plugin Name: Mudlet Snapshots
  * Plugin URI:  https://github.com/itsTheFae/Mudlet_CISnapshots
  * Description: Provides Tools for managing Mudlet Snapshots.
- * Version:     2019.07.09
+ * Version:     2019.07.10
  * Author:      TheFae
  * Author URI:  https://github.com/itsTheFae/
  * License:     GPL2
@@ -390,6 +390,12 @@ function mudletsnaps_massDeleteSnapshotFiles() {
         }
     }
     return $fileCount;
+}
+
+function mudletsnaps_logsTruncate() {
+    $dbh = mudletsnaps_getSnapshotPDO_DB();
+    $dbh->query('TRUNCATE `LogUploads`');
+    $dbh->query('TRUNCATE `LogDownloads`');
 }
 
 function mudletsnaps_getUploadsByDayChartJSON($daysAgo=15) {
@@ -1019,6 +1025,14 @@ function mudletsnaps_tool_page_base_forms() {
           }
         });
         
+        jQuery("#logdelsubmit").click(function(ev){
+          var r = confirm("Really Truncate and Delete the Snapshot Logs?");
+          if( r == false ) {
+            ev.preventDefault();
+            return false;
+          }
+        });
+        
         var chartElm1 = document.getElementById('dlStatsChart').getContext('2d');
         var myChart = new Chart(chartElm1, {
             type: 'line',
@@ -1132,7 +1146,7 @@ function mudletsnaps_tool_page_base_forms() {
         <form action="tools.php?page=mudlet-snapshots" method="post">
           <input type="hidden" name="action" value="massdelete_files" />
           <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
-          <p>Press the button below to immediately delete ALL snapshots from the server.<br/></p>
+          <p>Press the "Mass Delete Snapshots" button below to immediately delete ALL snapshot files from the server.<br/></p>
           <input class="button action dangerous" name="Submit" type="submit" value="Mass Delete Snapshots" id="mdsubmit" />
         </form>
         <hr/>
@@ -1151,6 +1165,12 @@ function mudletsnaps_tool_page_base_forms() {
         <hr/>
         
         <h2>Snapshot Usage Stats</h2>
+        <form action="tools.php?page=mudlet-snapshots" method="post" style="margin-bottom: 24px;">
+          <input type="hidden" name="action" value="logs_truncate" />
+          <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
+          <p>Use the "Delete Logs" button below to immediately delete all Upload/Download Log data.</p>
+          <input class="button action dangerous" name="Submit" type="submit" value="Delete Logs" id="logdelsubmit"/>
+        </form>
         <form action="tools.php?page=mudlet-snapshots" method="get">
           <input type="hidden" name="page" value="mudlet-snapshots"/>
           <label>Time Period: <input name="stats_ago" value="<?php echo $statsDaysAgo; ?>" type="number" min="1" max="120"/></label>
@@ -1236,6 +1256,12 @@ function mudletsnaps_tool_page_post() {
                 
                 $data = mudletsnaps_getIpListDataArrayFromText($text);
                 mudletsnaps_setIpListFromDataArray($data);
+                
+                wp_redirect( '?page=mudlet-snapshots' );
+                exit();
+            break;
+            case 'logs_truncate':
+                mudletsnaps_logsTruncate();
                 
                 wp_redirect( '?page=mudlet-snapshots' );
                 exit();
