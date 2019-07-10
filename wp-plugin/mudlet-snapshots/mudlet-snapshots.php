@@ -1,9 +1,11 @@
 <?php
 /**
  * Plugin Name: Mudlet Snapshots
- * Plugin URI:  https://make.mudlet.org/snapshots/
+ * Plugin URI:  https://github.com/itsTheFae/Mudlet_CISnapshots
  * Description: Provides Tools for managing Mudlet Snapshots.
- * Version:     20190709
+ * Version:     2019.07.09
+ * Author:      TheFae
+ * Author URI:  https://github.com/itsTheFae/
  * License:     GPL2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
