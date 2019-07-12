@@ -813,6 +813,165 @@ function mudletsnaps_getIpListEditorText() {
 }
 
 
+function mudletsnaps_getDashboardWidgetOptions() {
+    $opts = get_option('mudletsnaps_dashboard_widget_options');
+    
+    if(!isset($opts['stats_ago'])) {
+        $opts['stats_ago'] = 7;
+    }
+    
+    if(!isset($opts['stats_type'])) {
+        $opts['stats_type'] = 'day';
+    }
+    
+    return $opts;
+}
+
+function mudletsnaps_dashboard_widget_display() {
+    $opts = mudletsnaps_getDashboardWidgetOptions();
+    
+    $statsDaysAgo = $opts['stats_ago'];
+    $statsByType = $opts['stats_type'];
+    ?>
+    <script type="text/javascript">
+      jQuery(document).ready(function(){
+        var chartElm1 = document.getElementById('dlStatsChart').getContext('2d');
+        var myChart = new Chart(chartElm1, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: '# of Uploads',
+                    data: <?php echo mudletsnaps_getUploadsChartJSON($statsDaysAgo, $statsByType); ?>,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: '# of Downloads',
+                    data: <?php echo mudletsnaps_getDownloadsChartJSON($statsDaysAgo, $statsByType); ?>,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }],
+                    xAxes: [{
+                        ticks: {
+                            source: 'data'
+                        },
+                        type: 'time',
+                        time: {
+                            unit: '<?php echo $statsByType; ?>'
+                        }
+                    }] 
+                }
+            }
+        });
+        
+        var chartElm2 = document.getElementById('bwStatsChart').getContext('2d');
+        var myChart = new Chart(chartElm2, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Uploaded in MB',
+                    data: <?php echo mudletsnaps_getUploadMegaBytesChartJSON($statsDaysAgo, $statsByType); ?>,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Downloaded in MB',
+                    data: <?php echo mudletsnaps_getDownloadMegaBytesChartJSON($statsDaysAgo, $statsByType); ?>,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }],
+                    xAxes: [{
+                        ticks: {
+                            source: 'data'
+                        },
+                        type: 'time',
+                        time: {
+                            unit: '<?php echo $statsByType; ?>'
+                        }
+                    }] 
+                }
+            }
+        });
+      });
+    </script>
+    <canvas id="dlStatsChart" width="400" height="200"></canvas>
+    <hr/>
+    <canvas id="bwStatsChart" width="400" height="200"></canvas>
+    <?php
+}
+
+function mudletsnaps_dashboard_widget_control() {
+    $opts = mudletsnaps_getDashboardWidgetOptions();
+    $statsByTypes = array('day', 'month');
+    $statsDaysAgo = $opts['stats_ago'];
+    $statsByType = $opts['stats_type'];
+    
+    if(isset($_POST['submit'])) {
+        if( isset($_POST['stats_ago']) ) {
+            $statsDaysAgo = intval($_POST['stats_ago']);
+            if($statsDaysAgo <= 0) {
+                $statsDaysAgo = 15;
+            }
+        }
+        if( isset($_POST['stats_type']) ) {
+            $st = trim(strtolower($_POST['stats_type']));
+            if( in_array($st, $statsByTypes) ) {
+                $statsByType = $st;
+            }
+        }
+        $opts['stats_ago'] = $statsDaysAgo;
+        $opts['stats_type'] = $statsByType;
+        
+        update_option('mudletsnaps_dashboard_widget_options', $opts);
+    }
+    
+    ?>
+    <style type="text/css">
+    .msdw-form-note {
+        color: #5a5a5a;
+        font-size: 0.9em;
+        display: block;
+        margin-left: 8px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+    }
+    </style>
+    <label>Time Period: <input name="stats_ago" value="<?php echo $statsDaysAgo; ?>" type="number" min="1" max="120"/></label>
+    <?php mudletsnaps_getStatsSelectBox($statsByTypes, $statsByType); ?>
+    <span class="msdw-form-note">Times shown are recorded and displayed in <?php echo date_default_timezone_get(); ?></span>
+    <?php
+}
+
+function mudletsnaps_init_dashboard_widgets() {
+    wp_add_dashboard_widget(
+        'mudletsnaps_dashboard_widget',
+        'Snapshots Usage Stats',
+        'mudletsnaps_dashboard_widget_display',
+        'mudletsnaps_dashboard_widget_control'
+    );	
+}
+add_action('wp_dashboard_setup', 'mudletsnaps_init_dashboard_widgets');
+
 function mudletsnaps_admin_init() {
     global $pagenow;
     if( $pagenow != 'tools.php' ) {
