@@ -3,7 +3,7 @@
  * Plugin Name: Mudlet Snapshots
  * Plugin URI:  https://github.com/itsTheFae/Mudlet_CISnapshots
  * Description: Provides Tools for managing Mudlet Snapshots.
- * Version:     2019.07.10
+ * Version:     2019.07.12
  * Author:      TheFae
  * Author URI:  https://github.com/itsTheFae/
  * License:     GPL2
