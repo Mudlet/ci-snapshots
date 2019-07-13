@@ -3,7 +3,7 @@
  * Plugin Name: Mudlet Snapshots
  * Plugin URI:  https://github.com/itsTheFae/Mudlet_CISnapshots
  * Description: Provides Tools for managing Mudlet Snapshots.
- * Version:     2019.07.12
+ * Version:     2019.07.13
  * Author:      TheFae
  * Author URI:  https://github.com/itsTheFae/
  * License:     GPL2
@@ -398,18 +398,37 @@ function mudletsnaps_logsTruncate() {
     $dbh->query('TRUNCATE `LogDownloads`');
 }
 
-function mudletsnaps_getUploadsByDayChartJSON($daysAgo=15) {
+function mudletsnaps_getChartPaddingData($intervalAgo=15, $type='day') {
+    $dataPoints = array();
+    $dateIntervalId = 'D';
+    $dateFormat = 'Y-m-d';
+    if($type == 'month') {
+        $dateIntervalId = 'M';
+        $dateFormat = 'Y-m-01';
+    }
+    
+    for( $i = 0; $i < $intervalAgo; $i++ ) {
+        $dataDate = new DateTime();
+        if($i > 0) {
+            $dataDate->sub(new DateInterval('P'. strval($i) . $dateIntervalId));
+        }
+        $dateStr = $dataDate->format($dateFormat);
+        $dataPoints[$dateStr] = 0;
+    }
+    return $dataPoints;
+}
+
+function mudletsnaps_getUploadsByDayChartData($daysAgo=15) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
-        //$stmt = $dbh->prepare('SELECT * FROM `LogDownloads` WHERE `event_time` < :oldest');
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, COUNT(`event_time`) AS num_upl
             FROM `LogUploads`
             WHERE `event_time` > :oldest
@@ -418,25 +437,22 @@ function mudletsnaps_getUploadsByDayChartJSON($daysAgo=15) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => $row['num_upl']
-                );
+                $data[ $row['ev_date'] ] = $row['num_upl'];
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
     
-    return json_encode($data);
+    return $data;
 }
 
-function mudletsnaps_getUploadsByMonthChartJSON($monthsAgo=3) {
+function mudletsnaps_getUploadsByMonthChartData($monthsAgo=3) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
@@ -450,43 +466,54 @@ function mudletsnaps_getUploadsByMonthChartJSON($monthsAgo=3) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => $row['num_upl']
-                );
+                $data[ $row['ev_date'] ] = $row['num_upl'];
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
     
-    return json_encode($data);
+    return $data;
 }
 
 function mudletsnaps_getUploadsChartJSON($intervalAgo=15, $type='day') {
+    $dataPoints = array();
+    
     switch($type) {
         case 'month':
-            return mudletsnaps_getUploadsByMonthChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getUploadsByMonthChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            return mudletsnaps_getUploadsByDayChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getUploadsByDayChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
     }
+    
+    $jsonData = array();
+    foreach($dataPoints as $date => $data) {
+        $jsonData[] = array(
+            'x' => $date,
+            'y' => $data
+        );
+    }
+    return json_encode($jsonData);
 }
 
-function mudletsnaps_getUploadMegaBytesByDayChartJSON($daysAgo=15) {
+function mudletsnaps_getUploadMegaBytesByDayChartData($daysAgo=15) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
-        //$stmt = $dbh->prepare('SELECT * FROM `LogDownloads` WHERE `event_time` < :oldest');
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, SUM(`file_size`) AS bytes
             FROM `LogUploads`
             WHERE `event_time` > :oldest
@@ -495,25 +522,21 @@ function mudletsnaps_getUploadMegaBytesByDayChartJSON($daysAgo=15) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => round((intval($row['bytes']) / 1048576), 2)
-                );
+                $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
-    
-    return json_encode($data);
+    return $data;
 }
 
-function mudletsnaps_getUploadMegaBytesByMonthChartJSON($monthsAgo=3) {
+function mudletsnaps_getUploadMegaBytesByMonthChartData($monthsAgo=3) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
@@ -527,43 +550,53 @@ function mudletsnaps_getUploadMegaBytesByMonthChartJSON($monthsAgo=3) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => round((intval($row['bytes']) / 1048576), 2)
-                );
+                $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
-    
-    return json_encode($data);
+    return $data;
 }
 
 function mudletsnaps_getUploadMegaBytesChartJSON($intervalAgo=15, $type='day') {
+    $dataPoints = array();
+    
     switch($type) {
         case 'month':
-            return mudletsnaps_getUploadMegaBytesByMonthChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getUploadMegaBytesByMonthChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            return mudletsnaps_getUploadMegaBytesByDayChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getUploadMegaBytesByDayChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
     }
+    
+    $jsonData = array();
+    foreach($dataPoints as $date => $data) {
+        $jsonData[] = array(
+            'x' => $date,
+            'y' => $data
+        );
+    }
+    return json_encode($jsonData);
 }
 
-function mudletsnaps_getDownloadsByDayChartJSON($daysAgo=15) {
+function mudletsnaps_getDownloadsByDayChartData($daysAgo=15) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
-        //$stmt = $dbh->prepare('SELECT * FROM `LogDownloads` WHERE `event_time` < :oldest');
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, COUNT(`event_time`) AS num_dls
             FROM `LogDownloads`
             WHERE `event_time` > :oldest
@@ -572,31 +605,27 @@ function mudletsnaps_getDownloadsByDayChartJSON($daysAgo=15) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => $row['num_dls']
-                );
+                $data[ $row['ev_date'] ] = $row['num_dls'];
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
     
-    return json_encode($data);
+    return $data;
 }
 
-function mudletsnaps_getDownloadsByMonthChartJSON($monthsAgo=15) {
+function mudletsnaps_getDownloadsByMonthChartData($monthsAgo=15) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
-        //$stmt = $dbh->prepare('SELECT * FROM `LogDownloads` WHERE `event_time` < :oldest');
         $stmt = $dbh->prepare('SELECT DATE_FORMAT(`event_time`,\'%Y-%m-01\') AS ev_date, COUNT(`event_time`) AS num_dls
             FROM `LogDownloads`
             WHERE `event_time` > :oldest
@@ -605,37 +634,49 @@ function mudletsnaps_getDownloadsByMonthChartJSON($monthsAgo=15) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => $row['num_dls']
-                );
+                $data[ $row['ev_date'] ] = $row['num_dls'];
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
     
-    return json_encode($data);
+    return $data;
 }
 
 function mudletsnaps_getDownloadsChartJSON($intervalAgo=15, $type='day') {
+    $dataPoints = array();
+    
     switch($type) {
         case 'month':
-            return mudletsnaps_getDownloadsByMonthChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getDownloadsByMonthChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            return mudletsnaps_getDownloadsByDayChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getDownloadsByDayChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
     }
+    
+    $jsonData = array();
+    foreach($dataPoints as $date => $data) {
+        $jsonData[] = array(
+            'x' => $date,
+            'y' => $data
+        );
+    }
+    return json_encode($jsonData);
 }
 
-function mudletsnaps_getDownloadMegaBytesByDayChartJSON($daysAgo=15) {
+function mudletsnaps_getDownloadMegaBytesByDayChartData($daysAgo=15) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
@@ -649,25 +690,22 @@ function mudletsnaps_getDownloadMegaBytesByDayChartJSON($daysAgo=15) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => round((intval($row['bytes']) / 1048576), 2)
-                );
+                $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
     
-    return json_encode($data);
+    return $data;
 }
 
-function mudletsnaps_getDownloadMegaBytesByMonthChartJSON($monthsAgo=3) {
+function mudletsnaps_getDownloadMegaBytesByMonthChartData($monthsAgo=3) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
-        return json_decode(array());
+        return array();
     } else {
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
@@ -681,29 +719,41 @@ function mudletsnaps_getDownloadMegaBytesByMonthChartJSON($monthsAgo=3) {
         $r = $stmt->execute();
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                $data[] = array(
-                    'x' => $row['ev_date'],
-                    'y' => round((intval($row['bytes']) / 1048576), 2)
-                );
+                $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
             }
         } else {
-            return json_decode(array());
+            return array();
         }
     }
     
-    return json_encode($data);
+    return $data;
 }
 
 function mudletsnaps_getDownloadMegaBytesChartJSON($intervalAgo=15, $type='day') {
+    $dataPoints = array();
+    
     switch($type) {
         case 'month':
-            return mudletsnaps_getDownloadMegaBytesByMonthChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getDownloadMegaBytesByMonthChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            return mudletsnaps_getDownloadMegaBytesByDayChartJSON($intervalAgo);
+            $dbData = mudletsnaps_getDownloadMegaBytesByDayChartData($intervalAgo);
+            $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
+            $dataPoints = array_merge($dataPoints, $dbData);
         break;
     }
+    
+    $jsonData = array();
+    foreach($dataPoints as $date => $data) {
+        $jsonData[] = array(
+            'x' => $date,
+            'y' => $data
+        );
+    }
+    return json_encode($jsonData);
 }
 
 function mudletsnaps_getStatsSelectBox($types, $selected, $name='stats_type', $echo=true) {
@@ -855,6 +905,21 @@ function mudletsnaps_dashboard_widget_display() {
                 }]
             },
             options: {
+                responsive: true,
+                legend: {
+                    position: 'bottom',
+                },
+                animation: {
+                    duration: 0,
+                },
+                title: {
+                    display: true,
+                    text: 'Uploads / Downloads by <?php echo ucfirst($statsByType); ?>'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 scales: {
                     yAxes: [{
                         ticks: {
@@ -894,6 +959,21 @@ function mudletsnaps_dashboard_widget_display() {
                 }]
             },
             options: {
+                responsive: true,
+                legend: {
+                    position: 'bottom',
+                },
+                animation: {
+                    duration: 0,
+                },
+                title: {
+                    display: true,
+                    text: 'Bandwidth Usage by <?php echo ucfirst($statsByType); ?>'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 scales: {
                     yAxes: [{
                         ticks: {
@@ -1212,6 +1292,21 @@ function mudletsnaps_tool_page_base_forms() {
                 }]
             },
             options: {
+                responsive: true,
+                legend: {
+                    position: 'bottom',
+                },
+                animation: {
+                    duration: 0,
+                },
+                title: {
+                    display: true,
+                    text: 'Uploads / Downloads by <?php echo ucfirst($statsByType); ?>'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 scales: {
                     yAxes: [{
                         ticks: {
@@ -1251,6 +1346,21 @@ function mudletsnaps_tool_page_base_forms() {
                 }]
             },
             options: {
+                responsive: true,
+                legend: {
+                    position: 'bottom',
+                },
+                animation: {
+                    duration: 0,
+                },
+                title: {
+                    display: true,
+                    text: 'Bandwidth Usage by <?php echo ucfirst($statsByType); ?>'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 scales: {
                     yAxes: [{
                         ticks: {
