@@ -96,7 +96,7 @@ $snapshot_path = $snapshot_ids[0];
 $snapshot_url = $snapshot_ids[1];
 $snapshot_uid = $snapshot_ids[2];
 if( rename($tmpname, $snapshot_path) ) {
-    $maxdays = 14;
+    $maxdays = DEFAULT_FILE_LIFETIME_DAYS;
     if( isset($_SERVER['HTTP_MAX_DAYS']) ) {
         if( preg_match('/^[0-9]+$/i', $_SERVER['HTTP_MAX_DAYS']) === 1 ) {
             $maxdays = intval($_SERVER['HTTP_MAX_DAYS']);
