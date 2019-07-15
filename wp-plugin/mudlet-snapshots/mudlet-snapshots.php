@@ -784,6 +784,37 @@ function mudletsnaps_getStatsSelectBox($types, $selected, $name='stats_type', $e
     }
 }
 
+function mudletsnaps_getDownloadIpData($daysAgo=15) {
+    $data = array();
+    $dbh = mudletsnaps_getSnapshotPDO_DB();
+    if( $dbh == false ) {
+        echo("Error Connecting with Snapshot Database!");
+        return array();
+    } else {
+        $oDate = new DateTime();
+        $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
+        $oldestTime = $oDate->format('Y-m-d H:i:s');
+        
+        $stmt = $dbh->prepare('SELECT `ip_addr`, SUM(`file_size`) AS bytes, COUNT(`ip_addr`) AS dl_num
+            FROM `LogDownloads`
+            WHERE `event_time` > :oldest
+            GROUP BY `ip_addr`
+            ORDER BY bytes DESC');
+        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
+        $r = $stmt->execute();
+        if( $r ) {
+            while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
+                $dataSize = mudletsnaps_human_filesize( $row['bytes'] );
+                $data[ $row['ip_addr'] ] = array($dataSize, $row['dl_num']);
+            }
+        } else {
+            return array();
+        }
+    }
+    return $data;
+}
+
+
 function mudletsnaps_setIpListFromDataArray($data) {
     global $mudletsnaps_config;
     $ipListFile = $mudletsnaps_config['safelist_file'];
@@ -1245,6 +1276,21 @@ function mudletsnaps_tool_page_base_forms() {
         margin-top: 4px;
         margin-bottom: 4px;
       }
+      
+      .ip-stats {
+        font-size: 1.05em;
+      }
+      .ip-stats th {
+        font-size: 1.15em;
+        padding: 3px;
+      }
+      .ip-stats tr:nth-child(even) {
+        background: rgba(0,0,0,0.08);
+      }
+      .ip-stats td {
+        text-align: center;
+        padding: 2px;
+      }
     </style>
     <script type="text/javascript">
       jQuery(document).ready(function(){
@@ -1450,6 +1496,21 @@ function mudletsnaps_tool_page_base_forms() {
         <canvas id="dlStatsChart" width="400" height="200"></canvas>
         <hr/>
         <canvas id="bwStatsChart" width="400" height="200"></canvas>
+        <hr/>
+        
+        <table class="ip-stats">
+          <tr><th>IP Address</th><th>Bandwidth</th><th>Downloads</th></tr>
+          <?php
+            $daysAgo = $statsDaysAgo;
+            if($statsByType == 'month') {
+                $daysAgo = $statsDaysAgo * 30;
+            } 
+            $data = mudletsnaps_getDownloadIpData($daysAgo);
+            foreach($data as $ip => $stats) {
+                echo "<tr><td>{$ip}</td><td>{$stats[0]}</td><td>{$stats[1]}</td></tr>\n";
+            }
+          ?>
+        </table>
         
     </div>
     <?php
