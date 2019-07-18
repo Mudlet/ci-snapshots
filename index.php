@@ -86,8 +86,10 @@ else {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $row['time_created']);
             $exdate = DateTime::createFromFormat("Y-m-d H:i:s", $row['time_expires']);
             
-            $datetime = $date->format("Y-m-d H:i");
-            $exdatetime = $exdate->format("Y-m-d H:i");
+            $datetime = $date->format('Y-m-d H:i');
+            $datetime8601 = $date->format('c');
+            $exdatetime = $exdate->format('Y-m-d H:i');
+            $exdatetime8601 = $exdate->format('c');
             $filesize = human_filesize($filesizebytes);
             #$fname = $row['file_key'] . '/' . $row['file_name'];
             $fname = $row['file_name'];
@@ -112,8 +114,10 @@ else {
                 $gitLinks = '<span class="filegitlinks">'. $PR_ID . $Commit_ID .'</span>';
             }
             
-            $item = '<a class="filename" href="'.$url.'">'.$fname.'</a><span class="fileinfo"><span class="filetime">'. $datetime . 
-                    '</span><span class="filesize">'. $filesize .'</span><span class="filetime">'. $exdatetime .'</span>' .
+            $item = '<a class="filename" href="'.$url.'">'.$fname.'</a><span class="fileinfo">'.
+                    '<span class="filetime" data-isotime="'. $datetime8601 .'">'. $datetime . 
+                    '</span><span class="filesize">'. $filesize .'</span>'.
+                    '<span class="filetime" data-isotime="'. $exdatetime8601 .'">'. $exdatetime .'</span>' .
                     '<span class="filedls">'. $row['num_downloads'] .'</span>'. $gitLinks .'</span>';
             
             $elements .= "<li class=\"filelist-item\">{$item}</li>\n";

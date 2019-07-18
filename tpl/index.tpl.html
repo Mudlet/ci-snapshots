@@ -153,6 +153,7 @@ footer {
 
 
 </style>
+
 <title>Mudlet Pull-Request Snapshots</title>
 
 </head>
@@ -169,14 +170,55 @@ footer {
   <h1>Available Snapshot Files</h1>
   <p style="margin-left: 1.1em;">This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br/>
   These files are made available to enable easier testing of software changes but cannot be stored indefinitely.<br/>
-  All times are shown in {pg_timezone}</p>
+  All times are shown in <span class="pg-timezone">{pg_timezone}</span></p>
   {pg_content}
 </section>
 <footer>
-  All times are in {pg_timezone} - {pg_size_listed} Storage Used - 
+  All times are in <span class="pg-timezone">{pg_timezone}</span> - {pg_size_listed} Storage Used - 
   Made with <i class="fas fa-heart" aria-hidden="true" title="heart"></i><span class="sr-only">heart</span>, 
   <i class="fas fa-coffee" aria-hidden="true" title="coffee"></i><span class="sr-only">coffee</span>, and You.
 </footer>
+
+<script src="https://make.mudlet.org/snapshots/tpl/js/jquery-3.4.1.slim.min.js"></script>
+<script>
+  function padZero(i) {
+    if (i < 10) {
+        i = "0" + i;
+    }
+    return i;
+  }
+  
+  $(document).ready(function(){
+    var pg_timezone = $.trim($('span.pg-timezone:first').text());
+    var sys_timezone = '';
+    
+    $('.filelist-item .filetime').each(function(idx){
+      var timeStr = $(this).data('isotime');
+      var dateObj = new Date(timeStr);
+      var opts = {
+        hour12: false,
+        day:    '2-digit',
+        month:  '2-digit',
+        year:   'numeric',
+        hour:   '2-digit',
+        minute: '2-digit'
+      };
+      var localFormattedTime = dateObj.toLocaleDateString('default', opts);
+      $(this).text(localFormattedTime);
+      
+      if( sys_timezone == '' ) {
+        var topts = {
+          timeZoneName: 'short'
+        }
+        var tmpDateStr = dateObj.toLocaleDateString('default', topts).split(" ");
+        sys_timezone = tmpDateStr[ (tmpDateStr.length - 1) ];
+      }
+    });
+    
+    $('span.pg-timezone').html( "local time <em>(" + sys_timezone + ")</em> <!-- converted from " + pg_timezone + " -->");
+    
+  });
+</script>
 
 </body>
 </html>
