@@ -3,7 +3,7 @@
  * Plugin Name: Mudlet Snapshots
  * Plugin URI:  https://github.com/itsTheFae/Mudlet_CISnapshots
  * Description: Provides Tools for managing Mudlet Snapshots.
- * Version:     2019.07.13
+ * Version:     2019.07.19
  * Author:      TheFae
  * Author URI:  https://github.com/itsTheFae/
  * License:     GPL2
@@ -418,23 +418,45 @@ function mudletsnaps_getChartPaddingData($intervalAgo=15, $type='day') {
     return $dataPoints;
 }
 
-function mudletsnaps_getUploadsByDayChartData($daysAgo=15) {
+function mudletsnaps_getUploadsByDayChartData($daysAgo=15, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, COUNT(`event_time`) AS num_upl
             FROM `LogUploads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE(`event_time`)');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        //$stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
+        $searchParams[':oldest'] = $oldestTime;
+        
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = $row['num_upl'];
@@ -447,23 +469,43 @@ function mudletsnaps_getUploadsByDayChartData($daysAgo=15) {
     return $data;
 }
 
-function mudletsnaps_getUploadsByMonthChartData($monthsAgo=3) {
+function mudletsnaps_getUploadsByMonthChartData($monthsAgo=3, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE_FORMAT(`event_time`,\'%Y-%m-01\') AS ev_date, COUNT(`event_time`) AS num_upl
             FROM `LogUploads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE_FORMAT(`event_time`,\'%Y-%m-01\')');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = $row['num_upl'];
@@ -476,18 +518,18 @@ function mudletsnaps_getUploadsByMonthChartData($monthsAgo=3) {
     return $data;
 }
 
-function mudletsnaps_getUploadsChartJSON($intervalAgo=15, $type='day') {
+function mudletsnaps_getUploadsChartJSON($intervalAgo=15, $type='day', $search=null) {
     $dataPoints = array();
     
     switch($type) {
         case 'month':
-            $dbData = mudletsnaps_getUploadsByMonthChartData($intervalAgo);
+            $dbData = mudletsnaps_getUploadsByMonthChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            $dbData = mudletsnaps_getUploadsByDayChartData($intervalAgo);
+            $dbData = mudletsnaps_getUploadsByDayChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
@@ -503,23 +545,43 @@ function mudletsnaps_getUploadsChartJSON($intervalAgo=15, $type='day') {
     return json_encode($jsonData);
 }
 
-function mudletsnaps_getUploadMegaBytesByDayChartData($daysAgo=15) {
+function mudletsnaps_getUploadMegaBytesByDayChartData($daysAgo=15, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, SUM(`file_size`) AS bytes
             FROM `LogUploads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE(`event_time`)');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
@@ -531,23 +593,43 @@ function mudletsnaps_getUploadMegaBytesByDayChartData($daysAgo=15) {
     return $data;
 }
 
-function mudletsnaps_getUploadMegaBytesByMonthChartData($monthsAgo=3) {
+function mudletsnaps_getUploadMegaBytesByMonthChartData($monthsAgo=3, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE_FORMAT(`event_time`,\'%Y-%m-01\') AS ev_date, SUM(`file_size`) AS bytes
             FROM `LogUploads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE_FORMAT(`event_time`,\'%Y-%m-01\')');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
@@ -559,18 +641,18 @@ function mudletsnaps_getUploadMegaBytesByMonthChartData($monthsAgo=3) {
     return $data;
 }
 
-function mudletsnaps_getUploadMegaBytesChartJSON($intervalAgo=15, $type='day') {
+function mudletsnaps_getUploadMegaBytesChartJSON($intervalAgo=15, $type='day', $search=null) {
     $dataPoints = array();
     
     switch($type) {
         case 'month':
-            $dbData = mudletsnaps_getUploadMegaBytesByMonthChartData($intervalAgo);
+            $dbData = mudletsnaps_getUploadMegaBytesByMonthChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            $dbData = mudletsnaps_getUploadMegaBytesByDayChartData($intervalAgo);
+            $dbData = mudletsnaps_getUploadMegaBytesByDayChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
@@ -586,23 +668,43 @@ function mudletsnaps_getUploadMegaBytesChartJSON($intervalAgo=15, $type='day') {
     return json_encode($jsonData);
 }
 
-function mudletsnaps_getDownloadsByDayChartData($daysAgo=15) {
+function mudletsnaps_getDownloadsByDayChartData($daysAgo=15, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, COUNT(`event_time`) AS num_dls
             FROM `LogDownloads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE(`event_time`)');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = $row['num_dls'];
@@ -615,23 +717,43 @@ function mudletsnaps_getDownloadsByDayChartData($daysAgo=15) {
     return $data;
 }
 
-function mudletsnaps_getDownloadsByMonthChartData($monthsAgo=15) {
+function mudletsnaps_getDownloadsByMonthChartData($monthsAgo=15, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE_FORMAT(`event_time`,\'%Y-%m-01\') AS ev_date, COUNT(`event_time`) AS num_dls
             FROM `LogDownloads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE_FORMAT(`event_time`,\'%Y-%m-01\')');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = $row['num_dls'];
@@ -644,18 +766,18 @@ function mudletsnaps_getDownloadsByMonthChartData($monthsAgo=15) {
     return $data;
 }
 
-function mudletsnaps_getDownloadsChartJSON($intervalAgo=15, $type='day') {
+function mudletsnaps_getDownloadsChartJSON($intervalAgo=15, $type='day', $search=null) {
     $dataPoints = array();
     
     switch($type) {
         case 'month':
-            $dbData = mudletsnaps_getDownloadsByMonthChartData($intervalAgo);
+            $dbData = mudletsnaps_getDownloadsByMonthChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            $dbData = mudletsnaps_getDownloadsByDayChartData($intervalAgo);
+            $dbData = mudletsnaps_getDownloadsByDayChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
@@ -671,23 +793,43 @@ function mudletsnaps_getDownloadsChartJSON($intervalAgo=15, $type='day') {
     return json_encode($jsonData);
 }
 
-function mudletsnaps_getDownloadMegaBytesByDayChartData($daysAgo=15) {
+function mudletsnaps_getDownloadMegaBytesByDayChartData($daysAgo=15, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE(`event_time`) AS ev_date, SUM(`file_size`) AS bytes
             FROM `LogDownloads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE(`event_time`)');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
@@ -700,23 +842,43 @@ function mudletsnaps_getDownloadMegaBytesByDayChartData($daysAgo=15) {
     return $data;
 }
 
-function mudletsnaps_getDownloadMegaBytesByMonthChartData($monthsAgo=3) {
+function mudletsnaps_getDownloadMegaBytesByMonthChartData($monthsAgo=3, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($monthsAgo) .'M'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT DATE_FORMAT(`event_time`,\'%Y-%m-01\') AS ev_date, SUM(`file_size`) AS bytes
             FROM `LogDownloads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY DATE_FORMAT(`event_time`,\'%Y-%m-01\')');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $data[ $row['ev_date'] ] = round((intval($row['bytes']) / 1048576), 2);
@@ -729,18 +891,18 @@ function mudletsnaps_getDownloadMegaBytesByMonthChartData($monthsAgo=3) {
     return $data;
 }
 
-function mudletsnaps_getDownloadMegaBytesChartJSON($intervalAgo=15, $type='day') {
+function mudletsnaps_getDownloadMegaBytesChartJSON($intervalAgo=15, $type='day', $search=null) {
     $dataPoints = array();
     
     switch($type) {
         case 'month':
-            $dbData = mudletsnaps_getDownloadMegaBytesByMonthChartData($intervalAgo);
+            $dbData = mudletsnaps_getDownloadMegaBytesByMonthChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
         case 'day':
         default:
-            $dbData = mudletsnaps_getDownloadMegaBytesByDayChartData($intervalAgo);
+            $dbData = mudletsnaps_getDownloadMegaBytesByDayChartData($intervalAgo, $search);
             $dataPoints = mudletsnaps_getChartPaddingData($intervalAgo, $type);
             $dataPoints = array_merge($dataPoints, $dbData);
         break;
@@ -784,24 +946,44 @@ function mudletsnaps_getStatsSelectBox($types, $selected, $name='stats_type', $e
     }
 }
 
-function mudletsnaps_getDownloadIpData($daysAgo=15) {
+function mudletsnaps_getDownloadIpData($daysAgo=15, $search=null) {
     $data = array();
     $dbh = mudletsnaps_getSnapshotPDO_DB();
     if( $dbh == false ) {
         echo("Error Connecting with Snapshot Database!");
         return array();
     } else {
+        $searchSql = '';
+        $searchParams = array();
+        if( $search !== null ) {
+            $type = $search[0];
+            $terms = $search[1];
+            if( $type == 'exclude' ) {
+                $searchSql = ' AND `ip_addr` NOT IN(';
+            }
+            if( $type == 'include' ) {
+                $searchSql = ' AND `ip_addr` IN(';
+            }
+            foreach($terms as $i => $term) {
+                $key = ':ip'.$i;
+                $searchSql .= "$key,";
+                $searchParams[$key] = $term;
+            }
+            $searchSql = rtrim($searchSql, ',');
+            $searchSql .= ') ';
+        }
+        
         $oDate = new DateTime();
         $oDate->sub(new DateInterval('P'. strval($daysAgo) .'D'));
         $oldestTime = $oDate->format('Y-m-d H:i:s');
         
         $stmt = $dbh->prepare('SELECT `ip_addr`, SUM(`file_size`) AS bytes, COUNT(`ip_addr`) AS dl_num
             FROM `LogDownloads`
-            WHERE `event_time` > :oldest
+            WHERE `event_time` > :oldest '. $searchSql .'
             GROUP BY `ip_addr`
             ORDER BY bytes DESC');
-        $stmt->bindParam(':oldest', $oldestTime, PDO::PARAM_STR);
-        $r = $stmt->execute();
+        $searchParams[':oldest'] = $oldestTime;
+        $r = $stmt->execute($searchParams);
         if( $r ) {
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
                 $dataSize = mudletsnaps_human_filesize( $row['bytes'] );
@@ -1213,8 +1395,13 @@ function mudletsnaps_tool_page_base_forms() {
     $tbl = new MudletSnapsUsers_ListTable();
     $fstats = mudletsnaps_getSnapshotFileStats();
     $statsByTypes = array('day', 'month');
+    $statSearchTypes = array('exclude', 'include');
     $statsDaysAgo = 15;
-    $statsByType = 'day';
+    $statsByType = $statsByTypes[0];
+    $searchTerms = array();
+    $searchType = $statSearchTypes[0];
+    $searchData = null;
+    $searchBoxText = '';
     if( isset($_GET['stats_ago']) ) {
         $statsDaysAgo = intval($_GET['stats_ago']);
         if($statsDaysAgo <= 0) {
@@ -1225,6 +1412,33 @@ function mudletsnaps_tool_page_base_forms() {
         $st = trim(strtolower($_GET['stats_type']));
         if( in_array($st, $statsByTypes) ) {
             $statsByType = $st;
+        }
+    }
+    if( isset($_GET['search_type']) ) {
+        $sst = trim($_GET['search_type']);
+        if( in_array($sst, $statSearchTypes) ) {
+            $searchType = $sst;
+        }
+    }
+    if( isset($_GET['search_terms']) ) {
+        $terms = trim($_GET['search_terms']);
+        $terms = str_replace(',', ' ', $terms);
+        $tarr = explode(' ', $terms);
+        foreach($tarr as $idx => $term) {
+            $term = trim($term);
+            $term = strip_tags($term);
+            if( empty($term) ) {
+                continue;
+            }
+            if( 1 === preg_match('/[0-9a-f\.:]+/i', $term) ) {
+                $searchTerms[] = $term;
+                $searchBoxText .= $term . ' ';
+            }
+        }
+        if( count($searchTerms) > 0 ) {
+            $searchBoxText = trim($searchBoxText);
+            $searchBoxText = str_replace('"', '', $searchBoxText);
+            $searchData = array($searchType, $searchTerms);
         }
     }
     
@@ -1324,14 +1538,14 @@ function mudletsnaps_tool_page_base_forms() {
             data: {
                 datasets: [{
                     label: '# of Uploads',
-                    data: <?php echo mudletsnaps_getUploadsChartJSON($statsDaysAgo, $statsByType); ?>,
+                    data: <?php echo mudletsnaps_getUploadsChartJSON($statsDaysAgo, $statsByType, $searchData); ?>,
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 },
                 {
                     label: '# of Downloads',
-                    data: <?php echo mudletsnaps_getDownloadsChartJSON($statsDaysAgo, $statsByType); ?>,
+                    data: <?php echo mudletsnaps_getDownloadsChartJSON($statsDaysAgo, $statsByType, $searchData); ?>,
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 1
@@ -1378,14 +1592,14 @@ function mudletsnaps_tool_page_base_forms() {
             data: {
                 datasets: [{
                     label: 'Uploaded in MB',
-                    data: <?php echo mudletsnaps_getUploadMegaBytesChartJSON($statsDaysAgo, $statsByType); ?>,
+                    data: <?php echo mudletsnaps_getUploadMegaBytesChartJSON($statsDaysAgo, $statsByType, $searchData); ?>,
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1
                 },
                 {
                     label: 'Downloaded in MB',
-                    data: <?php echo mudletsnaps_getDownloadMegaBytesChartJSON($statsDaysAgo, $statsByType); ?>,
+                    data: <?php echo mudletsnaps_getDownloadMegaBytesChartJSON($statsDaysAgo, $statsByType, $searchData); ?>,
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 1
@@ -1480,17 +1694,16 @@ function mudletsnaps_tool_page_base_forms() {
         <hr/>
         
         <h2>Snapshot Usage Stats</h2>
-        <form action="tools.php?page=mudlet-snapshots" method="post" style="margin-bottom: 24px;">
-          <input type="hidden" name="action" value="logs_truncate" />
-          <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
-          <p>Use the "Delete Logs" button below to immediately delete all Upload/Download Log data.</p>
-          <input class="button action dangerous" name="Submit" type="submit" value="Delete Logs" id="logdelsubmit"/>
-        </form>
+        <p>Use these form options to customize the log reports below.</p>
         <form action="tools.php?page=mudlet-snapshots" method="get">
           <input type="hidden" name="page" value="mudlet-snapshots"/>
           <label>Time Period: <input name="stats_ago" value="<?php echo $statsDaysAgo; ?>" type="number" min="1" max="120"/></label>
-          <?php mudletsnaps_getStatsSelectBox($statsByTypes, $statsByType); ?>
-          <input class="button action" type="submit" value="Change" />
+          <?php 
+            mudletsnaps_getStatsSelectBox($statsByTypes, $statsByType); 
+            mudletsnaps_getStatsSelectBox($statSearchTypes, $statsSearchType, 'search_type');
+          ?>
+          <input type="text" name="search_terms" value="<?php echo $searchBoxText; ?>" placeholder="IPs separated by spaces" />
+          <input class="button action" type="submit" value="Update Reports" />
           <span class="form-note">Times shown are recorded and displayed in <?php echo date_default_timezone_get(); ?></span>
         </form>
         <canvas id="dlStatsChart" width="400" height="200"></canvas>
@@ -1505,13 +1718,19 @@ function mudletsnaps_tool_page_base_forms() {
             if($statsByType == 'month') {
                 $daysAgo = $statsDaysAgo * 30;
             } 
-            $data = mudletsnaps_getDownloadIpData($daysAgo);
+            $data = mudletsnaps_getDownloadIpData($daysAgo, $searchData);
             foreach($data as $ip => $stats) {
                 echo "<tr><td>{$ip}</td><td>{$stats[0]}</td><td>{$stats[1]}</td></tr>\n";
             }
           ?>
         </table>
         
+        <form action="tools.php?page=mudlet-snapshots" method="post" style="margin-bottom: 24px;">
+          <input type="hidden" name="action" value="logs_truncate" />
+          <?php mudletsnaps_nonce_field('mudlet-snapshots'); ?>
+          <p>Use the "Delete Logs" button below to immediately delete all Upload/Download Log data.</p>
+          <input class="button action dangerous" name="Submit" type="submit" value="Delete Logs" id="logdelsubmit"/>
+        </form>
     </div>
     <?php
 }
