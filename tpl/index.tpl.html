@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow" />
+
 <link rel="shortcut icon" href="https://make.mudlet.org/snapshots/favicon.ico">
 
 <link rel="stylesheet" href="https://make.mudlet.org/snapshots/tpl/css/fa5.8.2-all.min.css">
@@ -204,6 +206,8 @@ footer {
         minute: '2-digit'
       };
       var localFormattedTime = dateObj.toLocaleDateString('default', opts);
+      localFormattedTime = localFormattedTime.replace(',', '');
+      localFormattedTime = localFormattedTime.replace(new RegExp('/', 'g'), '-');
       $(this).text(localFormattedTime);
       
       if( sys_timezone == '' ) {

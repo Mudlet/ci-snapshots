@@ -91,7 +91,6 @@ else {
             $exdatetime = $exdate->format('Y-m-d H:i');
             $exdatetime8601 = $exdate->format('c');
             $filesize = human_filesize($filesizebytes);
-            #$fname = $row['file_key'] . '/' . $row['file_name'];
             $fname = $row['file_name'];
             
             preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}/i', $fname, $m);
@@ -114,7 +113,7 @@ else {
                 $gitLinks = '<span class="filegitlinks">'. $PR_ID . $Commit_ID .'</span>';
             }
             
-            $item = '<a class="filename" href="'.$url.'">'.$fname.'</a><span class="fileinfo">'.
+            $item = '<a class="filename" href="'.$url.'" rel="nofollow">'.$fname.'</a><span class="fileinfo">'.
                     '<span class="filetime" data-isotime="'. $datetime8601 .'">'. $datetime . 
                     '</span><span class="filesize">'. $filesize .'</span>'.
                     '<span class="filetime" data-isotime="'. $exdatetime8601 .'">'. $exdatetime .'</span>' .
