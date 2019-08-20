@@ -25,8 +25,8 @@ if ( isset($_GET['prid']) ) {
 }
 
 $Commit_Filter = null;
-if ( isset($_GET['commit']) ) {
-    if ( preg_match('/([a-f0-9]+)/i', $_GET['commit'], $m) ) {
+if ( isset($_GET['commitid']) ) {
+    if ( preg_match('/([a-f0-9]+)/i', $_GET['commitid'], $m) ) {
         $Commit_Filter = trim($m[1]);
     }
 }
@@ -59,8 +59,8 @@ try {
         // reasonable defaults for json
         $snapshot = array(
             'url' => 'https://make.mudlet.org/snapshots/',
-            'pr_id' => null,
-            'commit_id' => null,
+            'prid' => null,
+            'commitid' => null,
             'platform' => 'unknown',
             'creation_time' => null
         );
@@ -95,9 +95,8 @@ try {
         }
         
         // set data post filters.
-        $snapshot['pr_id'] = (empty($PR_ID)) ? null : $PR_ID;
-        $snapshot['commit_id'] = (empty($Commit_ID)) ? null : $Commit_ID;
-        
+        $snapshot['prid'] = (empty($PR_ID)) ? null : $PR_ID;
+        $snapshot['commitid'] = (empty($Commit_ID)) ? null : $Commit_ID;
         
         // Platform parsing.
         $lowerFilename = strtolower($row['file_name']);
@@ -118,7 +117,6 @@ try {
         if ($Platform_Filter !== null && $Platform_Filter != $snapshot['platform'] ) {
             continue;
         }
-        
         
         // Date/time
         $date = DateTime::createFromFormat("Y-m-d H:i:s", $row['time_created']);
