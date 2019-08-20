@@ -113,13 +113,35 @@ else {
                 $gitLinks = '<span class="filegitlinks">'. $PR_ID . $Commit_ID .'</span>';
             }
             
-            $item = '<a class="filename" href="'.$url.'" rel="nofollow">'.$fname.'</a><span class="fileinfo">'.
+            $platform_icon = '<i class="fas fa-file-archive platform-icon"></i>';
+            $platform_type = 'unknown';
+            $lowerFilename = strtolower($row['file_name']);
+            if ( false !== strpos($lowerFilename, 'windows') || 
+                 false !== strpos($lowerFilename, 'exe')) 
+            {
+                $platform_icon = '<i class="fab fa-windows platform-icon"></i>';
+                $platform_type = 'windows';
+            }
+            if ( false !== strpos($lowerFilename, 'linux') || 
+                 false !== strpos($lowerFilename, 'appimage')) 
+            {
+                $platform_icon = '<i class="fab fa-linux platform-icon"></i>';
+                $platform_type = 'linux';
+            }
+            if ( false !== strpos($lowerFilename, 'dmg') ) 
+            {
+                $platform_icon = '<i class="fab fa-apple platform-icon"></i>';
+                $platform_type = 'macos';
+            }
+            
+            
+            $item = '<a class="filename" href="'.$url.'" rel="nofollow">'.$platform_icon . $fname.'</a><span class="fileinfo">'.
                     '<span class="filetime" data-isotime="'. $datetime8601 .'">'. $datetime . 
                     '</span><span class="filesize">'. $filesize .'</span>'.
                     '<span class="filetime" data-isotime="'. $exdatetime8601 .'">'. $exdatetime .'</span>' .
                     '<span class="filedls">'. $row['num_downloads'] .'</span>'. $gitLinks .'</span>';
             
-            $elements .= "<li class=\"filelist-item\">{$item}</li>\n";
+            $elements .= "<li class=\"filelist-item {$platform_type}\">{$item}</li>\n";
         }
         $stmt = null;
         

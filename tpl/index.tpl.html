@@ -135,6 +135,12 @@ footer {
   margin-right: 0px;
 }
 
+.platform-icon {
+    font-size: 1.3em;
+    vertical-align: middle;
+    padding-right: 0.4em;
+}
+
 .hinfo {
   text-align: center;
   font-weight: bold;
@@ -151,6 +157,16 @@ footer {
 }
 .hinfo .filegitlinks {
   text-align: center;
+}
+
+.filter-ctrl {
+    margin-left: 1.4em;
+    margin-top: 2em;
+}
+
+.masterlist {
+  display: none;
+  visibility: hidden;
 }
 
 
@@ -173,6 +189,16 @@ footer {
   <p style="margin-left: 1.1em;">This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br/>
   These files are made available to enable easier testing of software changes but cannot be stored indefinitely.<br/>
   All times are shown in <span class="pg-timezone">{pg_timezone}</span></p>
+  <div class="filter-ctrl">
+    Show only files for: 
+    <select name="platform_filter" id="platform_filter">
+      <option value="all">All Platforms</option>
+      <option value="windows">Windows</option>
+      <option value="linux">Linux</option>
+      <option value="macos">Mac OS</option>
+    </select>
+    Remember via Cookie: <input type="checkbox" name="filter_cookie" id="filter_cookie" value="1">
+  </div>
   {pg_content}
 </section>
 <footer>
@@ -181,8 +207,11 @@ footer {
   <i class="fas fa-coffee" aria-hidden="true" title="coffee"></i><span class="sr-only">coffee</span>, and You.
 </footer>
 
+<script src="https://make.mudlet.org/snapshots/tpl/js/js.cookie.js"></script>
 <script src="https://make.mudlet.org/snapshots/tpl/js/jquery-3.4.1.slim.min.js"></script>
 <script>
+  var hasClonedList = false;
+ 
   function padZero(i) {
     if (i < 10) {
         i = "0" + i;
@@ -190,9 +219,29 @@ footer {
     return i;
   }
   
+  function showListItems(platform) {
+    if ( hasClonedList == false ) {
+      // Clone original list, with local conversions, for use in filtering.
+      var $masterList = $('<ul class="masterlist"></ul>');
+      var $clonedList = $('.filelist-item').clone();
+      $clonedList.appendTo($masterList);
+      $masterList.appendTo('section.bg-white');
+      hasClonedList = true;
+    }
+  
+    $('ul.filelist .filelist-item').remove();
+    if (platform == 'all') {
+      $('ul.masterlist .filelist-item').clone().appendTo('ul.filelist');
+    } else {
+      $('ul.masterlist .filelist-item.'+ platform ).clone().appendTo('ul.filelist');
+    }
+  }
+  
   $(document).ready(function(){
     var pg_timezone = $.trim($('span.pg-timezone:first').text());
     var sys_timezone = '';
+    var filterCookieName  = 'snapshots_show_only';
+    var filterCookieValue = Cookies.get(filterCookieName);
     
     $('.filelist-item .filetime').each(function(idx){
       var timeStr = $(this).data('isotime');
@@ -220,6 +269,33 @@ footer {
     });
     
     $('span.pg-timezone').html( "local time <em>(" + sys_timezone + ")</em> <!-- converted from " + pg_timezone + " -->");
+    
+    $('#platform_filter').on('change', function() {
+      showListItems( this.value );
+      if ( typeof filterCookieValue !== 'undefined' ) {
+        if ( $('#filter_cookie').is(':checked') ) {
+          CookieOpts = {expires: 365};
+          Cookies.set(filterCookieName, this.value, CookieOpts );
+        }
+      }
+    });
+    
+    $('#filter_cookie').on('change', function() {
+      if ( $(this).is(':checked') ) {
+        CookieOpts = {expires: 365};
+        Cookies.set(filterCookieName, $('#platform_filter').val(), CookieOpts );
+      } else {
+        Cookies.remove(filterCookieName);
+      }
+    });
+    
+    if ( typeof filterCookieValue !== 'undefined' ) {
+      $('#filter_cookie').prop('checked', true);
+      $('#platform_filter').val(filterCookieValue);
+      
+      setTimeout('showListItems("'+filterCookieValue+'")', 500);
+    }
+    
     
   });
 </script>
