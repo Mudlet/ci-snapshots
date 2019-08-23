@@ -66,6 +66,11 @@ else {
         
         $elements = '<li class="hinfo"> Name <span class="fileinfo"><span class="filetime">Created</span><span class="filesize">Size</span>'.
                     '<span class="filetime">Expires</span><span class="filesize">DL #</span><span class="filegitlinks">Github</span></span></li>';
+        $latest_branch_snaps = array(
+            'windows' => null,
+            'linux' => null, 
+            'macos' => null
+        );
         
         $totalSizeListed = 0;
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -95,9 +100,11 @@ else {
             
             preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}/i', $fname, $m);
             
+            $source_class = 'branch';
             $gitLinks = $PR_ID = $Commit_ID = "";
             if( count($m) == 3 ) {
                 if( !empty($m[1]) ) {
+                    $source_class = 'pull-request';
                     $PR_ID = '<a href="https://github.com/Mudlet/Mudlet/pull/'. $m[1] .'" title="View Pull Request on Github.com"><i class="far fa-code-merge"></i></a>';
                 }
                 if( !empty($m[2]) ) {
@@ -134,27 +141,51 @@ else {
                 $platform_type = 'macos';
             }
             
+            $item_classes = implode(' ', array($platform_type, $source_class));
             
-            $item = '<a class="filename" href="'.$url.'" rel="nofollow">'.$platform_icon . $fname.'</a><span class="fileinfo">'.
+            $item_link = '<a class="filename" href="'.$url.'" rel="nofollow">'.$platform_icon . $fname.'</a>';
+            
+            $item = $item_link . '<span class="fileinfo">'.
                     '<span class="filetime" data-isotime="'. $datetime8601 .'">'. $datetime . 
                     '</span><span class="filesize">'. $filesize .'</span>'.
                     '<span class="filetime" data-isotime="'. $exdatetime8601 .'">'. $exdatetime .'</span>' .
                     '<span class="filedls">'. $row['num_downloads'] .'</span>'. $gitLinks .'</span>';
             
-            $elements .= "<li class=\"filelist-item {$platform_type}\">{$item}</li>\n";
+            $item = "<li class=\"filelist-item {$item_classes}\">{$item}</li>\n";
+            
+            $elements .= $item;
+            
+            if ($source_class == 'branch') {
+                if ($latest_branch_snaps['windows'] == null && $platform_type == 'windows') {
+                    $latest_branch_snaps['windows'] = '<span class="windows"><label>Windows:</label> '.$item_link.'</span>';
+                }
+                
+                if ($latest_branch_snaps['linux'] == null && $platform_type == 'linux') {
+                    $latest_branch_snaps['linux'] = '<span class="linux"><label>Linux:</label> '.$item_link.'</span>';
+                }
+                
+                if ($latest_branch_snaps['macos'] == null && $platform_type == 'macos') {
+                    $latest_branch_snaps['macos'] = '<span class="macos"><label>Mac OS X:</label> '.$item_link.'</span>';
+                }
+            }
         }
         $stmt = null;
         
         $content = '<ul class="filelist">'. $elements ."</ul>\n";
+        
+        $latest_branch_content = implode('<br>', $latest_branch_snaps);
+        
         $totalSizeListedStr = human_filesize( $totalSizeListed );
     } catch (PDOException $e) {
         $content = "Error while fetching Snapshot list!<br/>\n";
+        $latest_branch_content = $content;
     }
     
     $page = str_replace('{pg_size_listed}', $totalSizeListedStr, $page);
     $page = str_replace('{SITE_URL}', SITE_URL, $page);
     $page = str_replace('{pg_timezone}', date_default_timezone_get(), $page);
-    $page = str_replace('{pg_content}', $content, $page);
+    $page = str_replace('{latest_branch_snapshots}', $latest_branch_content, $page);
+    $page = str_replace('{snapshot_list}', $content, $page);
     echo($page);
 }
 

@@ -66,13 +66,24 @@ section.bg-white {
   width: 100%;
 }
 section.bg-white h1 {
+  font-size: 1.5em;
+}
+section.bg-white h2 {
+  font-size: 1.15em;
+}
+section.bg-white h1,
+section.bg-white h2 {
   margin-left: 12px;
 }
 section.bg-white.compact {
   text-align: center;
 }
-section.bg-white.compact h1 {
+section.bg-white.compact h1,
+section.bg-white.compact h2 {
   margin-left: 0px;
+}
+section.bg-white p {
+  margin-left: 1.1em;
 }
 
 footer {
@@ -169,6 +180,17 @@ footer {
   visibility: hidden;
 }
 
+.latest-branch-files span {
+  margin-top: 3px;
+  margin-bottom: 3px;
+  display: inline-block;
+}
+.latest-branch-files label {
+  width: 100px;
+  text-align: right;
+  margin-right: 6px;
+  display: inline-block;
+}
 
 </style>
 
@@ -186,9 +208,15 @@ footer {
 </header>
 <section class="bg-white">
   <h1>Available Snapshot Files</h1>
-  <p style="margin-left: 1.1em;">This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br/>
+  <p>This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br/>
   These files are made available to enable easier testing of software changes but cannot be stored indefinitely.<br/>
   All times are shown in <span class="pg-timezone">{pg_timezone}</span></p>
+  
+  <div class="latest-branch-files">
+    <h2>Latest Branch Snapshots</h2>
+    <p>{latest_branch_snapshots}</p>
+  </div>
+  
   <div class="filter-ctrl">
     Show only files for: 
     <select name="platform_filter" id="platform_filter">
@@ -197,9 +225,15 @@ footer {
       <option value="linux">Linux</option>
       <option value="macos">Mac OS</option>
     </select>
+    in
+    <select name="source_filter" id="source_filter">
+      <option value="all">Branches &amp; PRs</option>
+      <option value="branch">Branches Only</option>
+      <option value="pull-request">Pull-Requests Only</option>
+    </select>
     Remember via Cookie: <input type="checkbox" name="filter_cookie" id="filter_cookie" value="1">
   </div>
-  {pg_content}
+  {snapshot_list}
 </section>
 <footer>
   All times are in <span class="pg-timezone">{pg_timezone}</span> - {pg_size_listed} Storage Used - 
@@ -212,6 +246,12 @@ footer {
 <script>
   var hasClonedList = false;
  
+  function setFilterCookie(cookieName, platVal, srcVal) {
+    var CookieOpts = {expires: 365};
+    var CookieValue = {platform: platVal, source: srcVal};
+    Cookies.set(cookieName, CookieValue, CookieOpts);
+  }
+  
   function padZero(i) {
     if (i < 10) {
         i = "0" + i;
@@ -219,7 +259,7 @@ footer {
     return i;
   }
   
-  function showListItems(platform) {
+  function showListItems(platform, source) {
     if ( hasClonedList == false ) {
       // Clone original list, with local conversions, for use in filtering.
       var $masterList = $('<ul class="masterlist"></ul>');
@@ -231,9 +271,17 @@ footer {
   
     $('ul.filelist .filelist-item').remove();
     if (platform == 'all') {
-      $('ul.masterlist .filelist-item').clone().appendTo('ul.filelist');
+      if (source == 'all') {
+        $('ul.masterlist .filelist-item').clone().appendTo('ul.filelist');
+      } else {
+        $('ul.masterlist .filelist-item.'+ source).clone().appendTo('ul.filelist');
+      }
     } else {
-      $('ul.masterlist .filelist-item.'+ platform ).clone().appendTo('ul.filelist');
+      if (source == 'all') {
+        $('ul.masterlist .filelist-item.'+ platform ).clone().appendTo('ul.filelist');
+      } else {
+        $('ul.masterlist .filelist-item.'+ platform + '.'+ source ).clone().appendTo('ul.filelist');
+      }
     }
   }
   
@@ -241,7 +289,7 @@ footer {
     var pg_timezone = $.trim($('span.pg-timezone:first').text());
     var sys_timezone = '';
     var filterCookieName  = 'snapshots_show_only';
-    var filterCookieValue = Cookies.get(filterCookieName);
+    var filterCookieValue = Cookies.getJSON(filterCookieName);
     
     $('.filelist-item .filetime').each(function(idx){
       var timeStr = $(this).data('isotime');
@@ -271,19 +319,33 @@ footer {
     $('span.pg-timezone').html( "local time <em>(" + sys_timezone + ")</em> <!-- converted from " + pg_timezone + " -->");
     
     $('#platform_filter').on('change', function() {
-      showListItems( this.value );
+      var source_filter_val = $('#source_filter').val();
+    
+      showListItems( this.value, source_filter_val );
       if ( typeof filterCookieValue !== 'undefined' ) {
         if ( $('#filter_cookie').is(':checked') ) {
-          CookieOpts = {expires: 365};
-          Cookies.set(filterCookieName, this.value, CookieOpts );
+          setFilterCookie(filterCookieName, this.value, source_filter_val);
+        }
+      }
+    });
+    
+    $('#source_filter').on('change', function() {
+      var platform_filter_val = $('#platform_filter').val();
+      
+      showListItems( platform_filter_val, this.value );
+      if ( typeof filterCookieValue !== 'undefined' ) {
+        if ( $('#filter_cookie').is(':checked') ) {
+          setFilterCookie(filterCookieName, platform_filter_val, this.value);
         }
       }
     });
     
     $('#filter_cookie').on('change', function() {
       if ( $(this).is(':checked') ) {
-        CookieOpts = {expires: 365};
-        Cookies.set(filterCookieName, $('#platform_filter').val(), CookieOpts );
+        var platform_filter_val = $('#platform_filter').val();
+        var source_filter_val = $('#source_filter').val();
+        
+        setFilterCookie(filterCookieName, platform_filter_val, source_filter_val);
       } else {
         Cookies.remove(filterCookieName);
       }
@@ -291,9 +353,10 @@ footer {
     
     if ( typeof filterCookieValue !== 'undefined' ) {
       $('#filter_cookie').prop('checked', true);
-      $('#platform_filter').val(filterCookieValue);
+      $('#platform_filter').val(filterCookieValue.platform);
+      $('#source_filter').val(filterCookieValue.source);
       
-      setTimeout('showListItems("'+filterCookieValue+'")', 500);
+      setTimeout('showListItems("'+ filterCookieValue.platform +'", "'+ filterCookieValue.source +'")', 500);
     }
     
     
