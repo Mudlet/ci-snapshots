@@ -245,7 +245,38 @@ footer {
 <script src="https://make.mudlet.org/snapshots/tpl/js/jquery-3.4.1.slim.min.js"></script>
 <script>
   var hasClonedList = false;
- 
+  
+  function getQueryParams() {
+    var currentURL = window.location.search.substring(1);
+    var currentParams = currentURL.split('&');
+    var params = [];
+    for (var i = 0; i < currentParams.length; i++) {
+      var paramData = currentParams[i].split('=');
+      params.push(paramData[0]);
+      params[paramData[0]] = paramData[1];
+    }
+    return params;
+  }
+  function getQueryParam(name)  {
+    var params = getQueryParams();
+    if ( name in params ) {
+      return params[name];
+    } else {
+      return undefined;
+    }
+  }
+  
+  function setPageUrlParams(params) {
+    if (window.history.pushState) {
+      pageUrl = window.location.pathname;
+      pageUrl += '?' + $.param(params);
+      
+      window.history.pushState({}, null, pageUrl);
+      return true;
+    }
+    return false;
+  }
+  
   function setFilterCookie(cookieName, platVal, srcVal) {
     var CookieOpts = {expires: 365};
     var CookieValue = {platform: platVal, source: srcVal};
@@ -283,6 +314,8 @@ footer {
         $('ul.masterlist .filelist-item.'+ platform + '.'+ source ).clone().appendTo('ul.filelist');
       }
     }
+    
+    setPageUrlParams({'platform':platform, 'source':source});
   }
   
   $(document).ready(function(){
@@ -356,7 +389,28 @@ footer {
       $('#platform_filter').val(filterCookieValue.platform);
       $('#source_filter').val(filterCookieValue.source);
       
-      setTimeout('showListItems("'+ filterCookieValue.platform +'", "'+ filterCookieValue.source +'")', 500);
+      setTimeout('showListItems("'+ filterCookieValue.platform +'", "'+ filterCookieValue.source +'")', 250);
+    }
+    
+    if ( getQueryParams().length > 0 ) {
+      var urlFilterPlatform = getQueryParam('platform');
+      var urlFilterSource = getQueryParam('source');
+      if ( typeof urlFilterPlatform !== 'undefined' || typeof urlFilterSource !== 'undefined' ) 
+      {
+        var validPlatforms = ['windows','linux','macos'];
+        var validSources = ['branch','pull-request'];
+        if (validPlatforms.indexOf(urlFilterPlatform) == -1) {
+          urlFilterPlatform = 'all';
+        }
+        if (validSources.indexOf(urlFilterSource) == -1) {
+          urlFilterSource = 'all';
+        }
+        
+        $('#platform_filter').val(urlFilterPlatform);
+        $('#source_filter').val(urlFilterSource);
+        
+        setTimeout('showListItems("'+ urlFilterPlatform +'", "'+ urlFilterSource +'")', 250);
+      }
     }
     
     
