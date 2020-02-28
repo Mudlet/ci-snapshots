@@ -1302,7 +1302,8 @@ function mudletsnaps_admin_menu() {
 add_action('admin_menu', 'mudletsnaps_admin_menu');
 
 function mudletsnaps_admin_scripts($hook) {
-    if($hook != 'tools_page_mudlet-snapshots') {
+    $screen_id = get_current_screen()->id;
+    if($hook != 'tools_page_mudlet-snapshots' and $screen_id != 'dashboard' ) {
         return;
     }
     $fp = plugins_url('js/Chart.bundle.min.js', __FILE__);
