@@ -84,12 +84,20 @@ section.bg-white.compact h2 {
 }
 section.bg-white p {
   margin-left: 1.1em;
+  line-height: 1.4em;
 }
 
 footer {
   color: #efefef;
   padding: 12px;
   font-size: 0.8em;
+}
+
+footer a {
+  text-decoration: none;
+  margin-top: 1.2em;
+  margin-right: 1.5em;
+  display: inline-block;
 }
 
 
@@ -208,8 +216,9 @@ footer {
 </header>
 <section class="bg-white">
   <h1>Available Snapshot Files</h1>
-  <p>This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br/>
-  These files are made available to enable easier testing of software changes but cannot be stored indefinitely.<br/>
+  <p>This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br />
+  These files are made available to enable easier testing of software changes but cannot be stored indefinitely.<br />
+  For Mudlet Release Downloads visit: <a href="https://www.mudlet.org/download/">https://www.mudlet.org/download/</a> <br />
   All times are shown in <span class="pg-timezone">{pg_timezone}</span></p>
   
   <div class="latest-branch-files">
@@ -239,6 +248,9 @@ footer {
   All times are in <span class="pg-timezone">{pg_timezone}</span> - {pg_size_listed} Storage Used - 
   Made with <i class="fas fa-heart" aria-hidden="true" title="heart"></i><span class="sr-only">heart</span>, 
   <i class="fas fa-coffee" aria-hidden="true" title="coffee"></i><span class="sr-only">coffee</span>, and You.
+  <br />
+  <a href="https://www.mudlet.org/terms-of-service/" title="Mudlet.org Terms of Service and Privacy Policy">Terms &amp; Privacy</a>
+  <a href="https://www.mudlet.org/about/" title="About Mudlet">About Mudlet</a>
 </footer>
 
 <script src="https://make.mudlet.org/snapshots/tpl/js/js.cookie.js"></script>
@@ -416,6 +428,26 @@ footer {
     
   });
 </script>
+
+<!-- Matomo -->
+<script type="text/javascript">
+  var _paq = window._paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(["setDocumentTitle", document.domain + "/" + document.title]);
+  _paq.push(["setCookieDomain", "*.mudlet.org"]);
+  _paq.push(["setDomains", ["*.mudlet.org","*.forums.mudlet.org","*.make.mudlet.org","*.wiki.mudlet.org","*.forums.mudlet.org","*.make.mudlet.org","*.mudlet.org","*.wiki.mudlet.org"]]);
+  _paq.push(["enableCrossDomainLinking"]);
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="https://stats.mudlet.org/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
 
 </body>
 </html>
