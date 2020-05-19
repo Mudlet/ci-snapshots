@@ -37,3 +37,7 @@ The required Apache Directives should be something similar to this:
     </LimitExcept>
     Script PUT /path/to/put.php
 
+
+## Installing
+Download and unpack or Clone the software into a PHP-Enabled server directory.  Copy and rename the file `config.exmaple.php` to `config.php` and edit the configuration.  
+The software will automatically create the required tables in the database.  Simply navigate to the index with a web browser before using `cron.php` or attempting to `PUT` files.  
