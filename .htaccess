@@ -1,5 +1,10 @@
 Options -Indexes
 
+<IfModule mod_headers.c>
+  SetEnvIf Origin "https?://(.+\.mudlet\.org|mudlet\.org)$" AccessControlAllowOrigin=$0
+  Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
+</IfModule>
+
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /snapshots/
