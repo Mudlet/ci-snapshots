@@ -1,0 +1,6 @@
+config.php
+
+tmp/*
+files/*
+tpl/webfonts/fa-*
+tpl/css/fa*
