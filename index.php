@@ -71,6 +71,8 @@ else {
             'linux' => null, 
             'macos' => null
         );
+        $branch_names = ['pull-request', 'branch']; // defaults needed for client-side js.
+        $branch_options = '';
         
         $totalSizeListed = 0;
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -98,13 +100,28 @@ else {
             $filesize = human_filesize($filesizebytes);
             $fname = $row['file_name'];
             
+            // should probably start pushing explicit data to the DB instead of doing this regex stuff
+            // but that would be more complicated in CI...  
             preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}/i', $fname, $m);
+            preg_match('/\d+(?:\.\d+)+-(ptb)-(?:PR\d+-|\d+-)?/i', $fname, $bm);
             
-            $source_class = 'branch';
+            // Build? Branch?  The regex pulls exact match but this code is extensible.
+            $branch_class = '';
+            if( count($bm) == 2 ) {
+                if( !empty($bm[1]) ) {
+                    if( !in_array($bm[1], $branch_names) ) {
+                        $branch_names[] = $bm[1];
+                        $branch_options .= '<option value="'. $bm[1] .'">'. $bm[1] .' Only</option>';
+                    }
+                    $branch_class = $bm[1];
+                }
+            }
+            
+            $source_class = 'branch '. $branch_class;
             $gitLinks = $PR_ID = $Commit_ID = "";
             if( count($m) == 3 ) {
                 if( !empty($m[1]) ) {
-                    $source_class = 'pull-request';
+                    $source_class = 'pull-request '. $branch_class;
                     $PR_ID = '<a href="https://github.com/Mudlet/Mudlet/pull/'. $m[1] .'" title="View Pull Request on Github.com"><i class="far fa-code-merge"></i></a>';
                 }
                 if( !empty($m[2]) ) {
@@ -155,7 +172,17 @@ else {
             
             $elements .= $item;
             
-            if ($source_class == 'branch') {
+            
+            // NOTE: This mess allows extensible filtering of the "Latest" list.
+            //$inputSource = '';
+            //if ( isset($_GET['source']) ) {
+            //    $inputSource = strval($_GET['source']);
+            //    if (stripos('all,branch,pull-request', $inputSource) !== false ) {
+            //        $inputSource = '';
+            //    }
+            //}
+            //if ( strpos($source_class, 'branch') !== false && (empty($inputSource) || (strpos($source_class, $inputSource) !== false && !empty($inputSource))) ) {
+            if ( strpos($source_class, 'branch') !== false && strpos($source_class, 'ptb') !== false ) {
                 if ($latest_branch_snaps['windows'] == null && $platform_type == 'windows') {
                     $latest_branch_snaps['windows'] = '<span class="windows"><label>Windows:</label> '.$item_link.'</span>';
                 }
@@ -181,6 +208,8 @@ else {
         $latest_branch_content = $content;
     }
     
+    $page = str_replace('{branch_names_opts}', $branch_options, $page);
+    $page = str_replace('{branch_names_js}', json_encode($branch_names), $page);
     $page = str_replace('{pg_size_listed}', $totalSizeListedStr, $page);
     $page = str_replace('{SITE_URL}', SITE_URL, $page);
     $page = str_replace('{pg_timezone}', date_default_timezone_get(), $page);

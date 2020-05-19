@@ -222,7 +222,7 @@ footer a {
   All times are shown in <span class="pg-timezone">{pg_timezone}</span></p>
   
   <div class="latest-branch-files">
-    <h2>Latest Branch Snapshots</h2>
+    <h2>Latest <abbr title="Public Test Build">PTB</abbr> Snapshots</h2>
     <p>{latest_branch_snapshots}</p>
   </div>
   
@@ -239,6 +239,7 @@ footer a {
       <option value="all">Branches &amp; PRs</option>
       <option value="branch">Branches Only</option>
       <option value="pull-request">Pull-Requests Only</option>
+      {branch_names_opts}
     </select>
     Remember via Cookie: <input type="checkbox" name="filter_cookie" id="filter_cookie" value="1">
   </div>
@@ -333,6 +334,7 @@ footer a {
   $(document).ready(function(){
     var pg_timezone = $.trim($('span.pg-timezone:first').text());
     var sys_timezone = '';
+    var defaultSources = ['all', 'branch', 'pull-request'];
     var filterCookieName  = 'snapshots_show_only';
     var filterCookieValue = Cookies.getJSON(filterCookieName);
     
@@ -383,6 +385,11 @@ footer a {
           setFilterCookie(filterCookieName, platform_filter_val, this.value);
         }
       }
+      
+      //if ( defaultSources.indexOf(this.value) == -1 ) {
+        // force reload to rebuild Latest List, as this is done server side.
+      //  window.location.reload(true); 
+      //}
     });
     
     $('#filter_cookie').on('change', function() {
@@ -410,7 +417,7 @@ footer a {
       if ( typeof urlFilterPlatform !== 'undefined' || typeof urlFilterSource !== 'undefined' ) 
       {
         var validPlatforms = ['windows','linux','macos'];
-        var validSources = ['branch','pull-request'];
+        var validSources =  {branch_names_js}; 
         if (validPlatforms.indexOf(urlFilterPlatform) == -1) {
           urlFilterPlatform = 'all';
         }
