@@ -1,6 +1,5 @@
 <?php
 
-
 // Fully Qualified URL to the index location for your server.
 define('SITE_URL', 'https://make.mudlet.org/snapshots/');
 
@@ -50,7 +49,7 @@ define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 
-/** 
+/**
     Stop Editing here
 **/
 // Script execution path

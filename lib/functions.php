@@ -1,69 +1,77 @@
 <?php
 
-if( !defined("CI_SNAPSHOTS") ) {
+if (!defined("CI_SNAPSHOTS")) {
     exit();
 }
 
-function isSafeExtension($ext) {
+function isSafeExtension($ext)
+{
     $safe = explode(',', ALLOWED_FILE_EXT);
-    if( in_array($ext, $safe) ) {
+    if (in_array($ext, $safe)) {
         return true;
     }
     return false;
 }
 
-function human_filesize($bytes, $decimals = 2) {
+function human_filesize($bytes, $decimals = 2)
+{
     $sz = 'BKMGT';
     $factor = floor((strlen($bytes) - 1) / 3);
     $unit = @$sz[$factor];
-    if( $unit == 'B' ) {
+    if ($unit == 'B') {
         $decimals = 0;
     }
     return sprintf("%.{$decimals}f ", $bytes / pow(1024, $factor)) . $unit;
 }
 
-function getSnapshotDirectorySize() {
+function getSnapshotDirectorySize()
+{
     global $ScriptPath;
     $f = $ScriptPath . '/' . UPLOAD_DIR;
-    $io = popen ( '/usr/bin/du -sb ' . $f, 'r' );
-    $size = fgets ( $io, 4096);
-    $size = substr ( $size, 0, strpos ( $size, "\t" ) );
-    pclose ( $io );
+    $io = popen('/usr/bin/du -sb ' . $f, 'r');
+    $size = fgets($io, 4096);
+    $size = substr($size, 0, strpos($size, "\t"));
+    pclose($io);
     return intval($size);
 }
 
-function getTempFileName() {
+function getTempFileName()
+{
     global $ScriptPath;
     $filepath = $ScriptPath . '/' . TEMP_DIR;
-    if( !is_dir($filepath) ) {
+    if (!is_dir($filepath)) {
         mkdir($filepath, 0775, true);
     }
     $filename = tempnam($filepath, 'snps_');
     return $filename;
 }
 
-function makeSnapshotFileIDs($filename) {
+function makeSnapshotFileIDs($filename)
+{
     global $ScriptPath;
     
-    $uid = substr(uniqid(),-6);
-    $url = SITE_URL . $uid .'/'. $filename;
-    $filepath = $ScriptPath . '/' . UPLOAD_DIR . $uid .'_'. $filename;
+    $uid = substr(uniqid(), -6);
+    $url = SITE_URL . $uid . '/' . $filename;
+    $filepath = $ScriptPath . '/' . UPLOAD_DIR . $uid . '_' . $filename;
     
     return array($filepath, $url, $uid);
 }
 
-function getSnapshotFilePath($filename, $key) {
+function getSnapshotFilePath($filename, $key)
+{
     global $ScriptPath;
-    $filepath = $ScriptPath . '/' . UPLOAD_DIR . $key .'_'. $filename;
+    $filepath = $ScriptPath . '/' . UPLOAD_DIR . $key . '_' . $filename;
     return $filepath;
 }
 
-function getSnapshotURL($filename, $key) {
-    $url = SITE_URL . $key .'/'. $filename;
+function getSnapshotURL($filename, $key)
+{
+    $url = SITE_URL . $key . '/' . $filename;
     return $url;
 }
 
-function CreateSnapshotsTable() {
+function CreateSnapshotsTable()
+{
     global $dbh;
     
     $sql = "CREATE TABLE `Snapshots` (
@@ -80,7 +88,8 @@ function CreateSnapshotsTable() {
     $res = $dbh->query($sql);
 }
 
-function SnapshotsTableExists() {
+function SnapshotsTableExists()
+{
     global $dbh;
     
     $tbl_result = false;
@@ -92,11 +101,12 @@ function SnapshotsTableExists() {
     return $tbl_result !== false;
 }
 
-function AddNewSnapshot($name, $key, $expires_in_days=14, $max_downloads=0) {
+function AddNewSnapshot($name, $key, $expires_in_days = 14, $max_downloads = 0)
+{
     global $dbh;
     
     $exdate = new DateTime();
-    $exdate->add(new DateInterval('P'. strval($expires_in_days) .'D'));
+    $exdate->add(new DateInterval('P' . strval($expires_in_days) . 'D'));
     $expire_date = $exdate->format("Y-m-d H:i:s");
     
     $sql = "INSERT INTO `Snapshots` (`file_name`, `file_key`, `time_created`, `time_expires`, `max_downloads`) VALUES (:fname, :fkey, NOW(), :expires, :maxdl)";
@@ -109,7 +119,8 @@ function AddNewSnapshot($name, $key, $expires_in_days=14, $max_downloads=0) {
     $stmt->execute();
 }
 
-function RemoveSnapshotByID($id) {
+function RemoveSnapshotByID($id)
+{
     global $dbh;
     
     $stmt = $dbh->prepare("DELETE FROM `Snapshots` WHERE `id`=:sid");
@@ -117,7 +128,8 @@ function RemoveSnapshotByID($id) {
     $stmt->execute();
 }
 
-function CheckSnapshotExists($name, $key) {
+function CheckSnapshotExists($name, $key)
+{
     global $dbh;
     
     $stmt = $dbh->prepare("SELECT `id` FROM `Snapshots` WHERE `file_name`=:fname AND `file_key`=:fkey");
@@ -126,27 +138,29 @@ function CheckSnapshotExists($name, $key) {
     $stmt->execute();
     
     $res = $stmt->fetch(PDO::FETCH_ASSOC);
-    if( $res !== false ) {
+    if ($res !== false) {
         return $res['id'];
     }
     return false;
 }
 
-function UpdateSnapshotDownloads($sid) {
+function UpdateSnapshotDownloads($sid)
+{
     global $dbh;
     
     $stmt = $dbh->prepare("UPDATE `Snapshots` SET `num_downloads` = `num_downloads` + 1 WHERE id=:sid");
     $stmt->bindParam(':sid', $sid, PDO::PARAM_INT);
     $res = $stmt->execute();
     
-    if( $res === false ) {
+    if ($res === false) {
         return false;
     } else {
         return true;
     }
 }
 
-function UsersTableExists() {
+function UsersTableExists()
+{
     global $dbh;
     
     $tbl_result = false;
@@ -158,7 +172,8 @@ function UsersTableExists() {
     return $tbl_result !== false;
 }
 
-function CreateUsersTable() {
+function CreateUsersTable()
+{
     global $dbh;
     
     $sql = "CREATE TABLE `Users` (
@@ -171,32 +186,34 @@ function CreateUsersTable() {
     $res = $dbh->query($sql);
 }
 
-function CheckUserCredentials($name, $pass) {
+function CheckUserCredentials($name, $pass)
+{
     global $dbh;
     
-    if( empty($name) || empty($pass) ) {
+    if (empty($name) || empty($pass)) {
         return false;
     }
     
     $stmt = $dbh->prepare("SELECT `id`,`phash` FROM `Users` WHERE `name`=:user");
     $stmt->bindParam(':user', $name);
     $r = $stmt->execute();
-    if( !$r ) {
+    if (!$r) {
         return false;
     }
     $res = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if( !password_verify($pass, $res['phash']) ) {
+    if (!password_verify($pass, $res['phash'])) {
         return false;
     } else {
-        if( session_status() == PHP_SESSION_ACTIVE ){
+        if (session_status() == PHP_SESSION_ACTIVE) {
             $_SESSION['mudletsnaps_user_id'] = $res['id'];
         }
         return true;
     }
 }
 
-function AddUserRecord($username, $passhash) {
+function AddUserRecord($username, $passhash)
+{
     global $dbh;
     
     $stmt = $dbh->prepare("INSERT INTO `Users` (`name`, `phash`) VALUES (:name, :phash);");
@@ -206,7 +223,8 @@ function AddUserRecord($username, $passhash) {
     return $stmt->execute();
 }
 
-function LogUploadsTableExists() {
+function LogUploadsTableExists()
+{
     global $dbh;
     
     $tbl_result = false;
@@ -218,7 +236,8 @@ function LogUploadsTableExists() {
     return $tbl_result !== false;
 }
 
-function CreateLogUploadsTable() {
+function CreateLogUploadsTable()
+{
     global $dbh;
     
     $sql = 'CREATE TABLE `LogUploads` (
@@ -234,17 +253,18 @@ function CreateLogUploadsTable() {
     $res = $dbh->query($sql);
 }
 
-function AddUploadLogRecord($filepath) {
+function AddUploadLogRecord($filepath)
+{
     global $dbh;
     
-    if( !is_file($filepath) || ! is_readable($filepath) ) {
+    if (!is_file($filepath) || ! is_readable($filepath)) {
         return false;
     }
     
     $filename = basename($filepath);
     $filesize = filesize($filepath);
     $user_id = 0;
-    if( session_status() == PHP_SESSION_ACTIVE ) {
+    if (session_status() == PHP_SESSION_ACTIVE) {
         $user_id = $_SESSION['mudletsnaps_user_id'];
     }
     
@@ -260,7 +280,8 @@ function AddUploadLogRecord($filepath) {
     return $stmt->execute();
 }
 
-function LogDownloadsTableExists() {
+function LogDownloadsTableExists()
+{
     global $dbh;
     
     $tbl_result = false;
@@ -272,7 +293,8 @@ function LogDownloadsTableExists() {
     return $tbl_result !== false;
 }
 
-function CreateLogDownloadsTable() {
+function CreateLogDownloadsTable()
+{
     global $dbh;
     
     $sql = 'CREATE TABLE `LogDownloads` (
@@ -288,17 +310,18 @@ function CreateLogDownloadsTable() {
     $res = $dbh->query($sql);
 }
 
-function AddDownloadLogRecord($filepath) {
+function AddDownloadLogRecord($filepath)
+{
     global $dbh;
     
-    if( !is_file($filepath) || ! is_readable($filepath) ) {
+    if (!is_file($filepath) || ! is_readable($filepath)) {
         return false;
     }
     
     $filename = basename($filepath);
     $filesize = filesize($filepath);
     $user_id = 0;
-    if( session_status() == PHP_SESSION_ACTIVE ) {
+    if (session_status() == PHP_SESSION_ACTIVE) {
         $user_id = $_SESSION['mudletsnaps_user_id'];
     }
     
@@ -314,30 +337,31 @@ function AddDownloadLogRecord($filepath) {
     return $stmt->execute();
 }
 
-function ExitFailedRequest($msg) {
-    if(empty($msg)){
+function ExitFailedRequest($msg)
+{
+    if (empty($msg)) {
         $msg = "Failed - Internal Server Error\n";
     }
     http_response_code(500);
-    header($_SERVER["SERVER_PROTOCOL"].' 500 Internal Server Error');
+    header($_SERVER["SERVER_PROTOCOL"] . ' 500 Internal Server Error');
     echo($msg);
     exit();
 }
 
-function ExitFileNotFound() {
+function ExitFileNotFound()
+{
     http_response_code(404);
-    header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
+    header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
     
     $page = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html><head>
 <title>404 Not Found</title>
 </head><body>
 <h1>Not Found</h1>
-<p>The requested URL '. $_SERVER['REQUEST_URI'] .' was not found on this server.</p>
+<p>The requested URL ' . $_SERVER['REQUEST_URI'] . ' was not found on this server.</p>
 <hr>
-<address>'. apache_get_version() .' Server at '. $_SERVER['SERVER_NAME'] .' Port '. strval($_SERVER['SERVER_PORT']) .'</address>
+<address>' . apache_get_version() . ' Server at ' . $_SERVER['SERVER_NAME'] . ' Port ' . strval($_SERVER['SERVER_PORT']) . '</address>
 </body></html>';
     echo($page);
     exit();
 }
-
