@@ -70,7 +70,7 @@ if (isset($_GET['dl'])) {
                         '<span class="filesize">' . _('Size') . '</span>' .
                         '<span class="filetime">' . _('Expires') . '</span>' .
                         '<span class="filesize">' . _('DL #') . '</span>' .
-                        '<span class="filegitlinks">' . _('Github') . '</span>'. 
+                        '<span class="filegitlinks">' . _('Github') . '</span>' .
                     "</span></li>\n";
         $latest_branch_snaps = array(
             'windows' => null,
@@ -137,14 +137,14 @@ if (isset($_GET['dl'])) {
                 if (! empty($m[2])) {
                     $git_url = 'https://github.com/Mudlet/Mudlet/commit/' . $m[2];
                     $git_ttl = _('View Commit on Github.com');
-                    $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' . 
+                    $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' .
                                  '<i class="far fa-code-commit"></i></a>';
                 }
             } elseif (count($m) == 2) {
                 if (! empty($m[2])) {
                     $git_url = 'https://github.com/Mudlet/Mudlet/commit/' . $m[2];
                     $git_ttl = _('View Commit on Github.com');
-                    $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' . 
+                    $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' .
                                  '<i class="far fa-code-commit"></i></a>';
                 }
             }
@@ -197,18 +197,22 @@ if (isset($_GET['dl'])) {
             // $inputSource = '';
             // }
             // }
-            // if ( strpos($source_class, 'branch') !== false && (empty($inputSource) || (strpos($source_class, $inputSource) !== false && !empty($inputSource))) ) {
+            // if ( strpos($source_class, 'branch') !== false && (empty($inputSource) ||
+            //      (strpos($source_class, $inputSource) !== false && !empty($inputSource))) ) {
             if (strpos($source_class, 'branch') !== false && strpos($source_class, 'ptb') !== false) {
                 if ($latest_branch_snaps['windows'] == null && $platform_type == 'windows') {
-                    $latest_branch_snaps['windows'] = '<span class="windows"><label>Windows:</label> ' . $item_link . '</span>';
+                    $latest_branch_snaps['windows'] = '<span class="windows"><label>Windows:</label> ' . $item_link .
+                                                      '</span>';
                 }
 
                 if ($latest_branch_snaps['linux'] == null && $platform_type == 'linux') {
-                    $latest_branch_snaps['linux'] = '<span class="linux"><label>Linux:</label> ' . $item_link . '</span>';
+                    $latest_branch_snaps['linux'] = '<span class="linux"><label>Linux:</label> ' . $item_link .
+                                                    '</span>';
                 }
 
                 if ($latest_branch_snaps['macos'] == null && $platform_type == 'macos') {
-                    $latest_branch_snaps['macos'] = '<span class="macos"><label>Mac OS X:</label> ' . $item_link . '</span>';
+                    $latest_branch_snaps['macos'] = '<span class="macos"><label>Mac OS X:</label> ' . $item_link .
+                                                    '</span>';
                 }
             }
         }
@@ -225,7 +229,7 @@ if (isset($_GET['dl'])) {
     }
     
     $tpl_keys = array(
-        'PG_LANG'           => $i18n_locale, 
+        'PG_LANG'           => $i18n_locale,
         'BRANCH_NAMES_OPTS' => $branch_options,
         'BRANCH_NAMES_JS'   => json_encode($branch_names),
         'PG_SIZE_LISTED'    => $totalSizeListedStr,
@@ -238,7 +242,7 @@ if (isset($_GET['dl'])) {
     require_once 'tpl/index.lang.php';
     $tpl_keys = array_merge($tpl_keys, $tpl_language_keys);
     
-    foreach( $tpl_keys as $k => $v ) {
+    foreach ($tpl_keys as $k => $v) {
         $key = '{' . $k . '}';
         $page = str_replace($key, $v, $page);
     }

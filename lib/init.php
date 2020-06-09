@@ -19,9 +19,12 @@ if (function_exists('gettext') && function_exists('locale_accept_from_http')) {
     
     bindtextdomain($i18n_domain_name, $i18n_domain_path);
     textdomain($i18n_domain_name);
-} else if (!function_exists('_')) {
+} elseif (!function_exists('_')) {
     $i18n_locale = $i18n_lang_default;
-    function _($msg) { return $msg; }
+    function _($msg)
+    {
+        return $msg;
+    }
 }
 
 require_once("lib/functions.php");
