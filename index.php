@@ -20,7 +20,7 @@ if (isset($_GET['dl'])) {
             ExitFileNotFound();
         } else {
             if (! is_readable($dl_filepath)) {
-                ExitFailedRequest('Failed Request - File Read Error');
+                ExitFailedRequest(_('Failed Request - File Read Error'));
             }
 
             @set_time_limit(0);
@@ -64,8 +64,14 @@ if (isset($_GET['dl'])) {
         );
         $stmt->execute();
 
-        $elements            = '<li class="hinfo"> Name <span class="fileinfo"><span class="filetime">Created</span><span class="filesize">Size</span>' .
-                    '<span class="filetime">Expires</span><span class="filesize">DL #</span><span class="filegitlinks">Github</span></span></li>';
+        $elements = '<li class="hinfo">' . _('Name') .
+                      '<span class="fileinfo">' .
+                        '<span class="filetime">' . _('Created') . '</span>' .
+                        '<span class="filesize">' . _('Size') . '</span>' .
+                        '<span class="filetime">' . _('Expires') . '</span>' .
+                        '<span class="filesize">' . _('DL #') . '</span>' .
+                        '<span class="filegitlinks">' . _('Github') . '</span>'. 
+                    "</span></li>\n";
         $latest_branch_snaps = array(
             'windows' => null,
             'linux'   => null,
@@ -111,7 +117,8 @@ if (isset($_GET['dl'])) {
                 if (! empty($bm[1])) {
                     if (! in_array($bm[1], $branch_names)) {
                         $branch_names[]  = $bm[1];
-                        $branch_options .= '<option value="' . $bm[1] . '">' . $bm[1] . ' Only</option>';
+                        $opt_text = $bm[1] . ' ' . _('Only');
+                        $branch_options .= '<option value="' . $bm[1] . '">' . $opt_text . '</option>';
                     }
                     $branch_class = $bm[1];
                 }
@@ -122,14 +129,23 @@ if (isset($_GET['dl'])) {
             if (count($m) == 3) {
                 if (! empty($m[1])) {
                     $source_class = 'pull-request ' . $branch_class;
-                    $PR_ID        = '<a href="https://github.com/Mudlet/Mudlet/pull/' . $m[1] . '" title="View Pull Request on Github.com"><i class="far fa-code-merge"></i></a>';
+                    $git_url = 'https://github.com/Mudlet/Mudlet/pull/' . $m[1];
+                    $git_ttl = _('View Pull Request on Github.com');
+                    $PR_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' .
+                               '<i class="far fa-code-merge"></i></a>';
                 }
                 if (! empty($m[2])) {
-                    $Commit_ID = '<a href="https://github.com/Mudlet/Mudlet/commit/' . $m[2] . '" title="View Commit on Github.com"><i class="far fa-code-commit"></i></a>';
+                    $git_url = 'https://github.com/Mudlet/Mudlet/commit/' . $m[2];
+                    $git_ttl = _('View Commit on Github.com');
+                    $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' . 
+                                 '<i class="far fa-code-commit"></i></a>';
                 }
             } elseif (count($m) == 2) {
                 if (! empty($m[2])) {
-                    $Commit_ID = '<a href="https://github.com/Mudlet/Mudlet/commit/' . $m[2] . '" title="View Commit on Github.com"><i class="far fa-code-commit"></i></a>';
+                    $git_url = 'https://github.com/Mudlet/Mudlet/commit/' . $m[2];
+                    $git_ttl = _('View Commit on Github.com');
+                    $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' . 
+                                 '<i class="far fa-code-commit"></i></a>';
                 }
             }
             if ($Commit_ID != '' || $PR_ID != '') {
@@ -204,16 +220,30 @@ if (isset($_GET['dl'])) {
 
         $totalSizeListedStr = human_filesize($totalSizeListed);
     } catch (PDOException $e) {
-        $content               = "Error while fetching Snapshot list!<br/>\n";
+        $content               = _('Error while fetching Snapshot list!') . "<br/>\n";
         $latest_branch_content = $content;
     }
-
-    $page = str_replace('{branch_names_opts}', $branch_options, $page);
-    $page = str_replace('{branch_names_js}', json_encode($branch_names), $page);
-    $page = str_replace('{pg_size_listed}', $totalSizeListedStr, $page);
-    $page = str_replace('{SITE_URL}', SITE_URL, $page);
-    $page = str_replace('{pg_timezone}', date_default_timezone_get(), $page);
-    $page = str_replace('{latest_branch_snapshots}', $latest_branch_content, $page);
-    $page = str_replace('{snapshot_list}', $content, $page);
+    
+    $tpl_keys = array(
+        'PG_LANG'           => $i18n_locale, 
+        'BRANCH_NAMES_OPTS' => $branch_options,
+        'BRANCH_NAMES_JS'   => json_encode($branch_names),
+        'PG_SIZE_LISTED'    => $totalSizeListedStr,
+        'SITE_URL'          => SITE_URL,
+        'PG_TIMEZONE'       => date_default_timezone_get(),
+        'SNAPSHOT_LIST'     => $content,
+        'LATEST_BRANCH_SNAPSHOTS'   => $latest_branch_content
+    );
+    
+    require_once 'tpl/index.lang.php';
+    $tpl_keys = array_merge($tpl_keys, $tpl_language_keys);
+    
+    foreach( $tpl_keys as $k => $v ) {
+        $key = '{' . $k . '}';
+        $page = str_replace($key, $v, $page);
+    }
+    
+    header('Content-Language: ' . $i18n_locale);
+    $page = $page . "\n<!-- Locale Pref: " . $i18n_locale_prefer . ' -->';
     echo( $page );
 }

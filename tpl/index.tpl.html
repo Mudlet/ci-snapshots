@@ -1,12 +1,12 @@
 <!DOCTYPE HTML>
-<html lang="en">
+<html lang="{PG_LANG}">
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow" />
 
-<link rel="shortcut icon" href="https://make.mudlet.org/snapshots/favicon.ico">
+<link rel="shortcut icon" href="{SITE_URL}favicon.ico">
 
-<link rel="stylesheet" href="https://make.mudlet.org/snapshots/tpl/css/fa5.8.2-all.min.css">
+<link rel="stylesheet" href="{SITE_URL}tpl/css/fa5.8.2-all.min.css">
 
 <style>
 body,td,th {
@@ -36,7 +36,7 @@ a:hover, a:active {
 }
 
 header {
-  background: url('https://make.mudlet.org/snapshots/tpl/img/mudlet-header-bgtile.png');
+  background: url('{SITE_URL}tpl/img/mudlet-header-bgtile.png');
   border-bottom: 1px solid #eae1bb;
   max-height: 80px;
 }
@@ -202,60 +202,56 @@ footer a {
 
 </style>
 
-<title>Mudlet Pull-Request Snapshots</title>
+<title>{L_TITLE}</title>
 
 </head>
 <body>
 <header>
-  <a class="logo-link" href="{SITE_URL}"><img src="https://make.mudlet.org/snapshots/tpl/img/mudlet-wp-logo.png" alt="Mudlet Logo" title="Mudlet Logo" /></a>
+  <a class="logo-link" href="{SITE_URL}"><img src="{SITE_URL}tpl/img/mudlet-wp-logo.png" alt="{L_LOGO_ALT}" title="{L_LOGO_ALT}" /></a>
   <nav>
-    <a href="https://www.mudlet.org/">Home</a>
-    <a href="https://wiki.mudlet.org/">Wiki</a>
-    <a href="https://forums.mudlet.org/">Forum</a>
+    {L_NAV_LINK_HOME}
+    {L_NAV_LINK_WIKI}
+    {L_NAV_LINK_FORUM}
   </nav>
 </header>
 <section class="bg-white">
-  <h1>Available Snapshot Files</h1>
-  <p>This page lists "Snapshots" of the Mudlet software built through Continuous Integration services as a result of commits and pull requests to the <a href="https://github.com/Mudlet/Mudlet">Mudlet repository on Github.com</a><br />
-  These files are made available to enable easier testing of software changes but cannot be stored indefinitely.<br />
-  For Mudlet Release Downloads visit: <a href="https://www.mudlet.org/download/">https://www.mudlet.org/download/</a> <br />
-  All times are shown in <span class="pg-timezone">{pg_timezone}</span></p>
+  <h1>{L_DESC_HEADING}</h1>
+  <p>{L_DESC_TEXT}<br />
+  {L_TIME_SHOWN_IN}<span class="pg-timezone">{PG_TIMEZONE}</span></p>
   
   <div class="latest-branch-files">
-    <h2>Latest <abbr title="Public Test Build">PTB</abbr> Snapshots</h2>
-    <p>{latest_branch_snapshots}</p>
+    <h2>{L_LATEST_HEADING}</h2>
+    <p>{LATEST_BRANCH_SNAPSHOTS}</p>
   </div>
   
   <div class="filter-ctrl">
-    Show only files for: 
+    {L_FILTER_PLATFORM_TEXT}
     <select name="platform_filter" id="platform_filter">
-      <option value="all">All Platforms</option>
+      <option value="all">{L_FILTER_ALL_PLATFORMS}</option>
       <option value="windows">Windows</option>
       <option value="linux">Linux</option>
       <option value="macos">Mac OS</option>
     </select>
-    in
+    {L_FILTER_SOURCE_TEXT}
     <select name="source_filter" id="source_filter">
-      <option value="all">Branches &amp; PRs</option>
-      <option value="branch">Branches Only</option>
-      <option value="pull-request">Pull-Requests Only</option>
-      {branch_names_opts}
+      <option value="all">{L_FILTER_SOURCE_BPR}</option>
+      <option value="branch">{L_FILTER_SOURCE_BRO}</option>
+      <option value="pull-request">{L_FILTER_SOURCE_PRO}</option>
+      {BRANCH_NAMES_OPTS}
     </select>
-    Remember via Cookie: <input type="checkbox" name="filter_cookie" id="filter_cookie" value="1">
+    {L_REMEMBER_VIA_COOKIE}<input type="checkbox" name="filter_cookie" id="filter_cookie" value="1">
   </div>
-  {snapshot_list}
+  {SNAPSHOT_LIST}
 </section>
 <footer>
-  All times are in <span class="pg-timezone">{pg_timezone}</span> - {pg_size_listed} Storage Used - 
-  Made with <i class="fas fa-heart" aria-hidden="true" title="heart"></i><span class="sr-only">heart</span>, 
-  <i class="fas fa-coffee" aria-hidden="true" title="coffee"></i><span class="sr-only">coffee</span>, and You.
+  {L_FOOTER_TIME_SHOWN_IN} <span class="pg-timezone">{PG_TIMEZONE}</span> - {PG_SIZE_LISTED} {L_FOOTER_STORAGE_USED} - 
+  {L_FOOTER_TAGLINE}
   <br />
-  <a href="https://www.mudlet.org/terms-of-service/" title="Mudlet.org Terms of Service and Privacy Policy">Terms &amp; Privacy</a>
-  <a href="https://www.mudlet.org/about/" title="About Mudlet">About Mudlet</a>
+  {L_FOOTER_LINKS}
 </footer>
 
-<script src="https://make.mudlet.org/snapshots/tpl/js/js.cookie.js"></script>
-<script src="https://make.mudlet.org/snapshots/tpl/js/jquery-3.4.1.slim.min.js"></script>
+<script src="{SITE_URL}tpl/js/js.cookie.js"></script>
+<script src="{SITE_URL}tpl/js/jquery-3.4.1.slim.min.js"></script>
 <script>
   var hasClonedList = false;
   
@@ -363,7 +359,7 @@ footer a {
       }
     });
     
-    $('span.pg-timezone').html( "local time <em>(" + sys_timezone + ")</em> <!-- converted from " + pg_timezone + " -->");
+    $('span.pg-timezone').html( "{L_JS_LOCAL_TIME} <em>(" + sys_timezone + ")</em> <!-- server tz: " + pg_timezone + " -->");
     
     $('#platform_filter').on('change', function() {
       var source_filter_val = $('#source_filter').val();
@@ -417,7 +413,7 @@ footer a {
       if ( typeof urlFilterPlatform !== 'undefined' || typeof urlFilterSource !== 'undefined' ) 
       {
         var validPlatforms = ['windows','linux','macos'];
-        var validSources =  {branch_names_js}; 
+        var validSources =  {BRANCH_NAMES_JS}; 
         if (validPlatforms.indexOf(urlFilterPlatform) == -1) {
           urlFilterPlatform = 'all';
         }

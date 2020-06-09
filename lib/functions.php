@@ -340,7 +340,7 @@ function AddDownloadLogRecord($filepath)
 function ExitFailedRequest($msg)
 {
     if (empty($msg)) {
-        $msg = "Failed - Internal Server Error\n";
+        $msg = _('Failed - Internal Server Error') . "\n";
     }
     http_response_code(500);
     header($_SERVER["SERVER_PROTOCOL"] . ' 500 Internal Server Error');
@@ -355,12 +355,12 @@ function ExitFileNotFound()
     
     $page = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html><head>
-<title>404 Not Found</title>
+<title>' . _('404 Not Found') . '</title>
 </head><body>
-<h1>Not Found</h1>
-<p>The requested URL ' . $_SERVER['REQUEST_URI'] . ' was not found on this server.</p>
+<h1>' . _('Not Found') . '</h1>
+<p>' . _('The requested URL was not found on this server.') . '</p> <!-- URL: ' . $_SERVER['REQUEST_URI'] . ' -->
 <hr>
-<address>' . apache_get_version() . ' Server at ' . $_SERVER['SERVER_NAME'] . ' Port ' . strval($_SERVER['SERVER_PORT']) . '</address>
+<address>' . apache_get_version() . _(' Server at ') . $_SERVER['SERVER_NAME'] . _(' Port ') . strval($_SERVER['SERVER_PORT']) . '</address>
 </body></html>';
     echo($page);
     exit();

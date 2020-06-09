@@ -25,7 +25,8 @@ To test access to Snapshots use:
     - Returns:  `Unknown - <IP>`  
 
 ## Installation Requirements
-This software is powered by PHP and Apache with Mod_Rewrite.  Most Apache configurations may disable PUT method requests by default, so we need to make some configuration changes to Apache (in Server or VirtualHost areas) in order to enable PUT method requests as well as configure our RewriteMap directive for mod_rewrite.
+This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support.  
+Most Apache configurations may disable PUT method requests by default, so we need to make some configuration changes to Apache (in Server or VirtualHost areas) in order to enable PUT method requests as well as configure our RewriteMap directive for mod_rewrite.
 The required Apache Directives should be something similar to this:
 
     RewriteMap allowed "txt:/path/to/ip_list"

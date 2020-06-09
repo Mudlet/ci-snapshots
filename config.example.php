@@ -49,8 +49,18 @@ define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 
+// i18n settings
+$i18n_lang_available = array('en');
+$i18n_lang_default = 'en';
+
+
 /**
     Stop Editing here
 **/
 // Script execution path
 $ScriptPath = dirname(__FILE__);
+
+// i18n constants
+$i18n_domain_path = $ScriptPath . '/i18n/';
+$i18n_domain_name = 'ci_snapshots';
+// The result path is:  /i18n/{language_code}/LC_MESSAGE/{$i18n_domain_name}.mo
