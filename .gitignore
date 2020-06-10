@@ -1,7 +1,7 @@
 config.php
 favicon.*
 
-tmp/*
-files/*
-tpl/webfonts/fa-*
-tpl/css/fa*
+/tmp*
+/files*
+/tpl/webfonts/fa-*
+/tpl/css/fa*
