@@ -36,6 +36,8 @@ RewriteRule ^knock/?.*$ /snapshots/knock.php?known=1 [L,NC]
 
 ## These directories may change depending on configs.
 ## This prevents direct access to these directories and files.
+RewriteRule ^wp-plugin/?.*$ /snapshots/index.php [L]
+RewriteRule ^\.git/?.*$ /snapshots/index.php [L]
 RewriteRule ^files/?.*$ /snapshots/index.php [L]
 RewriteRule ^tmp/?.*$ /snapshots/index.php [L]
 RewriteRule ^lib/?.*$ /snapshots/index.php [L]
@@ -53,7 +55,7 @@ RewriteRule . /snapshots/index.php [L]
 </IfModule>
 
 ## These directives ensure access to special files is disabled.
-<files config.php>
+<files "config.php">
 	<IfModule mod_authz_core.c>
 		Require all denied
 	</IfModule>
@@ -63,7 +65,7 @@ RewriteRule . /snapshots/index.php [L]
 	</IfModule>
 </files>
 
-<files ip_list>
+<files "ip_list">
 	<IfModule mod_authz_core.c>
 		Require all denied
 	</IfModule>
@@ -73,17 +75,7 @@ RewriteRule . /snapshots/index.php [L]
 	</IfModule>
 </files>
 
-<files *log>
-	<IfModule mod_authz_core.c>
-		Require all denied
-	</IfModule>
-	<IfModule !mod_authz_core.c>
-		Order allow,deny
-		Deny from all
-	</IfModule>
-</files>
-
-<files tmp/*>
+<files "*log">
 	<IfModule mod_authz_core.c>
 		Require all denied
 	</IfModule>
