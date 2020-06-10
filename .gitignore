@@ -1,4 +1,5 @@
 config.php
+ip_list
 favicon.*
 
 /tmp*

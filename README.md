@@ -41,4 +41,5 @@ The required Apache Directives should be something similar to this:
 
 ## Installing
 Download and unpack or Clone the software into a PHP-Enabled server directory.  Copy and rename the file `config.exmaple.php` to `config.php` and edit the configuration.  
+Likewise, copy the `ip_list.example` to `ip_list` and edit the tab-separated list data to suit your needs.  
 The software will automatically create the required tables in the database.  Simply navigate to the index with a web browser before using `cron.php` or attempting to `PUT` files.  
