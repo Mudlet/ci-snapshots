@@ -15,7 +15,12 @@ if (function_exists('gettext') && function_exists('locale_accept_from_http')) {
     $i18n_locale = locale_lookup($i18n_lang_available, $i18n_locale_prefer, false, $i18n_lang_default);
     
     putenv('LC_ALL=' . $i18n_locale);
-    setlocale(LC_ALL, $i18n_locale);
+    $i18n_test = setlocale(LC_ALL, $i18n_locale);
+    if ($i18n_test === false) {
+        $i18n_locale = $i18n_lang_default;
+        putenv('LC_ALL=' . $i18n_locale);
+        setlocale(LC_ALL, $i18n_locale);
+    }
     
     bindtextdomain($i18n_domain_name, $i18n_domain_path);
     textdomain($i18n_domain_name);

@@ -249,5 +249,5 @@ if (isset($_GET['dl'])) {
     
     header('Content-Language: ' . $i18n_locale);
     $page = $page . "\n<!-- Locale Pref: " . $i18n_locale_prefer . ' -->';
-    echo( $page );
+    echo( utf8_encode($page) );
 }
