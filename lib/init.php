@@ -11,7 +11,8 @@ require_once("config.php");
 
 // Detect user localization, apply if available.
 if (function_exists('gettext') && function_exists('locale_accept_from_http')) {
-    $i18n_locale_prefer = locale_accept_from_http($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+    $_lang_header = (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : $i18n_lang_default;
+    $i18n_locale_prefer = locale_accept_from_http($_lang_header);
     $i18n_locale = locale_lookup($i18n_lang_available, $i18n_locale_prefer, false, $i18n_lang_default);
     
     putenv('LC_ALL=' . $i18n_locale);
