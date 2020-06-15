@@ -31,7 +31,7 @@ To use the JSON data, send a GET request to https://make.mudlet.org/snapshots/js
 All data available will be returned by default. Optional arguments can be supplied to filter the returned data.  
 Optional URL Paramers are:  
  - `prid`         -- a PR ID number from github.
- - `commit`       -- a Commit ID from Git/Github.
+ - `commitid`     -- a Commit ID from Git/Github.
  - `platform`     -- a string for the platform, which must be one of:  `windows`, `linux`, or `macos`  
 
 The requested JSON list will show only entries which have matching values.  
