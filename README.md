@@ -1,7 +1,7 @@
 # Mudlet Snapshots Service
 This software repository powers the [Mudlet Snapshot portal](https://make.mudlet.org/snapshots/) and functions required to enable more reliable and customized storage of Mudlet's various CI builds.  
 
-## Usage
+## Usage for Uploads
 File uploads can be accomplished as follows:  
 `curl --upload-file ./test.gz https://make.mudlet.org/snapshots/test.gz`  
 **-or-**  
@@ -23,6 +23,18 @@ To test access to Snapshots use:
 `https://make.mudlet.org/snapshots/knock/`  
     - Returns:  `Known`  
     - Returns:  `Unknown - <IP>`  
+
+## Usage for JSON data
+CI Snapshots provides an endpoint at `/json.php` for fetching snapshot data as JSON.  
+To use the JSON data, send a GET request to https://make.mudlet.org/snapshots/json.php   
+
+All data available will be returned by default. Optional arguments can be supplied to filter the returned data.  
+Optional URL Paramers are:  
+ - `prid`         -- a PR ID number from github.
+ - `commit`       -- a Commit ID from Git/Github.
+ - `platform`     -- a string for the platform, which must be one of:  `windows`, `linux`, or `macos`  
+
+The requested JSON list will show only entries which have matching values.  
 
 ## Installation Requirements
 This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support.  
