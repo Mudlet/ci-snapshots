@@ -26,24 +26,86 @@ if (isset($_GET['dl'])) {
             @set_time_limit(0);
 
             $size = @filesize($dl_filepath);
+            $ext = strtolower(substr($dl_filepath, -3));
+            switch($ext) {
+                case 'zip':
+                    $ctype = 'application/zip';
+                    break;
+                case 'tar':
+                    // we can't be sure if its tar+gzip, tar+bz2, or just plain tar.
+                    // mime sniffing with magic.mime is probably best here...
+                    $ctype = mime_content_type($dl_filepath);
+                    break;
+                case 'dmg':
+                    $ctype = 'application/x-apple-diskimage';
+                    break;
+                case 'exe':
+                    $ctype = 'application/vnd.microsoft.portable-executable';
+                    break;
+                default:  
+                    $ctype = 'application/octet-stream';
+                    break;
+            }
+            
+            // check for Range header and implied Download Resume.
+            $range_start = $range_end = null;
+            if (isset($_SERVER['HTTP_RANGE'])) {
+                $range_header = trim($_SERVER['HTTP_RANGE']);
+                $has_range = preg_match('/^bytes=(-?\d+|\d+-\d+)(?:,.*)?$/iu', $range_header, $range_match);
+                
+                if ($has_range === 1 && count($range_match) == 2) {
+                    $range_str = $range_match[1];
+                    if (substr($range_str, 0, 1) === '-') {
+                        $from_end = abs(intval($range_str));
+                        $range_start = ($size - 1) - $from_end;
+                        $range_end = ($size - 1);
+                    } else {
+                        $rparts = explode('-', $range_str);
+                        $range_start = abs(intval( $rparts[0] ));
+                        $range_end = abs(intval( $rparts[1] ));
+                        
+                        $range_end = min($range_end, ($size - 1));
+                        $range_start = ($range_end < $range_start) ? 0 : $range_start;
+                    }
+                }
+                
+                if ($range_start == 0 && $range_end == ($size - 1)) {
+                    $range_start = null;
+                    $range_end = null;
+                }
+            }
+            
             $file = @fopen($dl_filepath, 'rb');
             if ($file !== false && $size !== false) {
                 UpdateSnapshotDownloads($dl_sid);
                 AddDownloadLogRecord($dl_filepath);
-
-                header('Content-Type: application/octet-stream');
-                header("Content-Length: ${size}");
+                
+                if ($range_start !== null && $range_end !== null) {
+                    @fseek($file, $range_start);
+                    
+                    $part_size = ($range_end - $range_start + 1);
+                    
+                    header('HTTP/1.1 206 Partial Content');
+                    header('Content-Range: bytes ' . strval($range_start) . '-' . strval($range_end) .'/'. strval($size));
+                    header("Content-Length: ${part_size}");
+                } else {
+                    header("Content-Length: ${size}");
+                }                
+                header('Accept-Ranges: bytes');
+                header('Content-Type: ' . $ctype);
                 header('Content-Transfer-Encoding: Binary');
                 header('Content-Encoding: Binary');
                 header('Content-Disposition: attachment; filename="' . $dl_filename . '"');
                 header('Pragma: public');
                 header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
 
+                // Note: this may need to be adjusted to support a range between mid and end...
                 while (! feof($file)) {
                     print( @fread($file, 8192) );
                     @ob_flush();
                     @flush();
                 }
+                fclose($file);
             } else {
                 ExitFailedRequest();
             }
