@@ -365,3 +365,17 @@ function ExitFileNotFound()
     echo($page);
     exit();
 }
+
+
+if(!function_exists('apache_get_version'))
+{
+    function apache_get_version()
+    {
+        if(!isset($_SERVER['SERVER_SOFTWARE']) || strlen($_SERVER['SERVER_SOFTWARE']) == 0)
+        {
+            return 'Apache/HTTPD';
+        }
+        return $_SERVER["SERVER_SOFTWARE"];
+    }
+}
+
