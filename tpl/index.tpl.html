@@ -200,6 +200,15 @@ footer a {
   display: inline-block;
 }
 
+@media (prefers-color-scheme: dark) {
+  body {
+    filter: invert(1) hue-rotate(.5turn);
+  }
+  footer {
+    color: #000;
+  }
+}
+
 </style>
 
 <title>{L_TITLE}</title>
