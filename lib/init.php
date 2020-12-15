@@ -10,6 +10,7 @@ $_SESSION['mudletsnaps_user_id'] = 0;
 require_once("config.php");
 
 // Detect user localization, apply if available.
+$i18n_locale = $i18n_lang_default;
 if (function_exists('gettext') && function_exists('locale_accept_from_http')) {
     $_lang_header = (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : $i18n_lang_default;
     $i18n_locale_prefer = locale_accept_from_http($_lang_header);
@@ -25,12 +26,6 @@ if (function_exists('gettext') && function_exists('locale_accept_from_http')) {
     
     bindtextdomain($i18n_domain_name, $i18n_domain_path);
     textdomain($i18n_domain_name);
-} elseif (!function_exists('_')) {
-    $i18n_locale = $i18n_lang_default;
-    function _($msg)
-    {
-        return $msg;
-    }
 }
 
 require_once("lib/functions.php");

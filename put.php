@@ -7,37 +7,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
     exit();
 }
 
-function ExitUnauthorized()
-{
-    header('WWW-Authenticate: Basic realm="Snapshots"');
-    http_response_code(401);
-    header($_SERVER["SERVER_PROTOCOL"] . ' 401 Unauthorized');
-    echo("Unauthorized\n");
-    exit();
-}
-
-function ExitForbidden()
-{
-    http_response_code(403);
-    header($_SERVER["SERVER_PROTOCOL"] . ' 403 Forbidden');
-    echo("Forbidden\n");
-    exit();
-}
-
-function ExitFullStorage()
-{
-    http_response_code(507);
-    header($_SERVER["SERVER_PROTOCOL"] . ' 507 Insufficient Storage');
-    echo("Insufficient Storage - Try Again Later\n");
-    exit();
-}
+define("CI_SNAPSHOTS", true);
+require_once('lib/functions.common.php');
+require_once('lib/functions.http.php');
 
 if ((!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) && PUT_REQUIRES_AUTH) {
     ExitUnauthorized();
 }
 
 // bootstrap web-app.
-define("CI_SNAPSHOTS", true);
 require_once('lib/init.php');
 
 
