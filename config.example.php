@@ -37,6 +37,24 @@ define('MAX_CAPACITY_DELETE_OLDEST', true);
 define('STRANDED_FILE_WINDOW', 2);
 
 
+// URL to the base artifact listing URL.  All URLs are built from this one.
+define('GHA_LIST_URL', 'https://api.github.com/repos/Mudlet/Mudlet/actions/artifacts');
+
+// Regular Expression used to validate and extract IDs from artifact URLs.
+define('GHA_URL_REGEX', '#https?://api\.github\.com/repos/Mudlet/Mudlet/actions/artifacts/(\d+)(?:/|/zip/?)?#iu');
+
+// Authentication token for Github API calls - OAuth or Person Access Token.
+define('GHA_AUTH_TOKEN', 'token');
+
+// Timeout in seconds for github artifact request execution.
+// this value controls the max time a request/download can take.
+define('GHA_CURL_TIMEOUT', 180);
+
+// Enforce HTTP Auth for GHA requests, similarly to PUT_REQUIRES_AUTH
+define('GHA_REQUIRES_AUTH', false);
+
+
+
 // Database connection details
 define('DB_HOST', '');
 

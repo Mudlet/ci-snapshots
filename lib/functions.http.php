@@ -91,3 +91,139 @@ if(!function_exists('apache_get_version'))
     }
 }
 
+
+/* 
+* Wrapper function for curl.
+* returns false on error.
+* on successs returns an array with 4 members.
+* array indexes:
+* -0- response body data.
+* -1- response headers array.
+* -2- response HTTP status code.
+* -3- time taken for request.
+*
+*/
+function do_curl_get($url, $send_headers=array(), $err400=false) {
+    
+    $url = filter_var($url, FILTER_VALIDATE_URL);
+    if ( $url === false || preg_match('/^https?:\/\/.+/iu',$url) === false ) {
+        trigger_error('Given $url is valid or not using http/https scheme.');
+        return false;
+    }
+    
+    $timeout_limit = GHA_CURL_TIMEOUT;
+    set_time_limit($timeout_limit + 30);
+    
+    $rtime_start = time();
+    $ch = curl_init( $url );
+    $recv_headers = [];
+    curl_setopt($ch, CURLOPT_FAILONERROR, $err400);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 12);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout_limit);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (compatible; make.mudlet.org/0.1)");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    if (!empty($send_headers) ) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $send_headers);
+    }
+    
+    // catch every valid header that CURL gets, we'll need that info for rate-limits, etc.
+    curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$recv_headers)
+    {
+        $len = strlen($header);
+        $header = explode(':', $header, 2);
+        if (count($header) < 2) // ignore invalid headers
+            return $len;
+        
+        $recv_headers[strtolower(trim($header[0]))][] = trim($header[1]);
+        
+        return $len;
+    });
+    
+    $result = curl_exec($ch);
+    if ( $result === false ) {
+        //trigger_error(curl_error($ch));
+        return false;
+    }
+    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    curl_close($ch);
+    
+    $rtime = time() - $rtime_start;
+    return array($result, $recv_headers, $httpcode, $rtime);
+}
+
+/* 
+* Wrapper function for curl.
+* returns false on error.
+* on successs returns an array with 4 members.
+* array indexes:
+* -0- response body data.
+* -1- response headers array.
+* -2- response HTTP status code.
+* -3- time taken for request.
+*
+*/
+function do_curl_download($url, $filepath, $send_headers=array(), $err400=true) {
+    
+    $url = filter_var($url, FILTER_VALIDATE_URL);
+    if ( $url === false || preg_match('/^https?:\/\/.+/iu',$url) === false ) {
+        trigger_error('Given $url is valid or not using http/https scheme.');
+        return false;
+    }
+    
+    if ( ! is_writable($filepath) ) {
+        trigger_error('Given $filepath is not writable!');
+        return false;
+    }
+    
+    
+    $timeout_limit = GHA_CURL_TIMEOUT;
+    set_time_limit($timeout_limit + 30);
+    
+    $rtime_start = time();
+    $fh = fopen($filepath, 'wb');
+    $ch = curl_init( $url );
+    $recv_headers = [];
+    curl_setopt($ch, CURLOPT_FAILONERROR, $err400);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 12);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout_limit);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (compatible; make.mudlet.org/0.1)");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FILE, $fh);
+    if (!empty($send_headers) ) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $send_headers);
+    }
+    
+    // catch every valid header that CURL gets, we'll need that info for rate-limits, etc.
+    curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$recv_headers)
+    {
+        $len = strlen($header);
+        $header = explode(':', $header, 2);
+        if (count($header) < 2) // ignore invalid headers
+            return $len;
+        
+        $recv_headers[strtolower(trim($header[0]))][] = trim($header[1]);
+        
+        return $len;
+    });
+    
+    $result = curl_exec($ch);
+    if ( $result === false ) {
+        //trigger_error(curl_error($ch));
+        return false;
+    }
+    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    curl_close($ch);
+    fclose($fh);
+    
+    $rtime = time() - $rtime_start;
+    return array($result, $recv_headers, $httpcode, $rtime);
+}
+
+
+
