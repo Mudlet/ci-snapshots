@@ -36,6 +36,19 @@ Optional URL Paramers are:
 
 The requested JSON list will show only entries which have matching values.  
 
+## Usage for Github Artifacts  
+CI Snapshots supports fetching Artifacts from Github Action Storage.  
+Use `/github_artifacts.php` to submit a fetch request.  If successful, the endpoint will return a URL similarly to how PUT uploads work.  
+Required URL Paramers are:  
+ - `id`        -- a github artifact ID number.
+ - `unzip`     -- 0 to use the zip as-is, or 1 to extract a file from the zip.
+
+When using `unzip=1` parameter, the artifact zip must contain only one file.  The filename stored in the zip is also used as the snapshot filename.  
+When using `unzip=0` parameter, the snapshot filename is created using the artifact `name` json property and appending `.zip` to it.  
+
+Optional settings via Headers `Max-Days` and `Max-Downloads` are also supported by this endpoint.  
+
+
 ## Installation Requirements
 This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support.  
 Most Apache configurations may disable PUT method requests by default, so we need to make some configuration changes to Apache (in Server or VirtualHost areas) in order to enable PUT method requests as well as configure our RewriteMap directive for mod_rewrite.
