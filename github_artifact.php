@@ -82,7 +82,7 @@ if ($jdata === null) {
 $dl_tmpname = getTempFileName();
 if ( isset($jdata['archive_download_url']) ) {
     $dl_url = $jdata['archive_download_url'];
-    if (empty($dl_url) || false === preg_match(GHA_URL_REGEX, $dl_url)) {
+    if (empty($dl_url) || false == preg_match(GHA_URL_REGEX, $dl_url)) {
         @unlink($dl_tmpname);
         ExitFailedRequest('Archive download url is invalid');
     }
