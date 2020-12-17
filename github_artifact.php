@@ -18,6 +18,7 @@ define("CI_SNAPSHOTS", true);
 require_once('lib/functions.common.php');
 require_once('lib/functions.http.php');
 
+header('Content-Type: text/plain');
 
 if ((!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) && GHA_REQUIRES_AUTH) {
     ExitUnauthorized();

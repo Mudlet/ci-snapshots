@@ -7,6 +7,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
     exit();
 }
 
+header('Content-Type: text/plain');
+
 define("CI_SNAPSHOTS", true);
 require_once('lib/functions.common.php');
 require_once('lib/functions.http.php');
