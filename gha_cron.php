@@ -172,6 +172,16 @@ function processQueueFile($filepath) {
 }
 
 
+$job_lock = $ScriptPath . DIRECTORY_SEPARATOR . '.gha_cron.lock';
+if ( file_exists( $job_lock ) ) {
+    echo("Job already running, quitting. \n");
+    exit();
+} elseif( touch($job_lock) === false ) {
+    echo("Could not set job lock, quitting. \n");
+    exit();
+}
+
+
 $timer_start = microtime(true);
 
 $ghalObj = new GithubArtifactList();
@@ -199,6 +209,11 @@ foreach( $files as $idx => $file ) {
     $n = microtime(true) - $ts;
     echo("Processing finished in $n seconds.\n\n");
     
+}
+
+if ( file_exists($job_lock) ) {
+    echo("Removing job lock. \n");
+    unlink($job_lock);
 }
 
 $t = microtime(true) - $timer_start;
