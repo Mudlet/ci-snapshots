@@ -29,7 +29,7 @@ CI Snapshots provides an endpoint at `/json.php` for fetching snapshot data as J
 To use the JSON data, send a GET request to https://make.mudlet.org/snapshots/json.php   
 
 All data available will be returned by default. Optional arguments can be supplied to filter the returned data.  
-Optional URL Paramers are:  
+Optional URL Parameters are:  
  - `prid`         -- a PR ID number from github.
  - `commitid`     -- a Commit ID from Git/Github.
  - `platform`     -- a string for the platform, which must be one of:  `windows`, `linux`, or `macos`  
@@ -39,7 +39,7 @@ The requested JSON list will show only entries which have matching values.
 ## Usage for Github Artifacts  
 CI Snapshots supports fetching Artifacts from Github Action Storage.  
 Use `/github_artifacts.php` to submit a fetch request.  If successful, the endpoint will return a URL similarly to how PUT uploads work.  
-Required URL Paramers are:  
+Required URL Parameters are:  
  - `id`        -- a github artifact ID number.
  - `unzip`     -- 0 to use the zip as-is, or 1 to extract a file from the zip.
 
@@ -48,6 +48,18 @@ When using `unzip=0` parameter, the snapshot filename is created using the artif
 
 Optional settings via Headers `Max-Days` and `Max-Downloads` are also supported by this endpoint.  
 
+### Using Artifact Queue
+Due to limitations in Github Actions and Artifacts storage, while a job is running associated artifacts cannot be downloaded.  
+To work around this, workflows can enqueue artifacts by name - assuming the artifact name is unique among other artifacts.  
+Usage of `/gha_queue.php` is the same as `/github_artifacts.php` with one exception.  
+The `id` parameter is replaced with an `aname` parameter and must contain a unique Artifact name.  
+  
+Example usage:  
+`https://make.mudlet.org/snapshots/gha_queue.php?aname=Mudlet-4.10.1-testing-pr1111-a770ad4d-linux-x64&unzip=1`  
+
+Optional settings via Headers are also supported.  
+
+**Note:** Queue services require a separate cron job! 
 
 ## Installation Requirements
 This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support.  

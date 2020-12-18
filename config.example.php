@@ -53,6 +53,16 @@ define('GHA_CURL_TIMEOUT', 180);
 // Enforce HTTP Auth for GHA requests, similarly to PUT_REQUIRES_AUTH
 define('GHA_REQUIRES_AUTH', false);
 
+// prefix for filenames used to store github artifact queue data.
+// this must not be left empty!
+define('GHA_QFILE_PREFIX', 'ghaq_');
+
+// file extension to append to queue data filename.
+define('GHA_QFILE_EXT', '.json');
+
+// number of seconds a github artifact queue item may remain in the queue.
+// a few hours would be reasonable.
+define('GHA_QUEUE_TIMEOUT', 18000);
 
 
 // Database connection details
