@@ -33,14 +33,14 @@ if (getSnapshotDirectorySize() >= MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDE
 
 
 $artifact_name = null;
-if ( isset($_REQUEST['aname']) && !empty($_REQUEST['aname']) ) {
-    if ( false == preg_match('/^[a-z0-9-_\.]+$/iu', $_REQUEST['aname']) ) {
+if ( isset($_REQUEST['artifact_name']) && !empty($_REQUEST['artifact_name']) ) {
+    if ( false == preg_match('/^[a-z0-9-_\.]+$/iu', $_REQUEST['artifact_name']) ) {
         ExitClientError('Invalid artifact name');
     } else {
-        $artifact_name = trim($_REQUEST['aname']);
+        $artifact_name = trim($_REQUEST['artifact_name']);
     }
 } else {
-    ExitClientError('Missing required parameter aname');
+    ExitClientError('Missing required parameter artifact_name');
 }
 
 $unzip = false;
