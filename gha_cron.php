@@ -24,6 +24,9 @@ require_once('lib/functions.common.php');
 require_once('lib/functions.http.php');
 
 
+$PRList_file = $ScriptPath . DIRECTORY_SEPARATOR . TEMP_DIR . '.pr-queue.json';
+
+
 class GithubArtifactList {
     private $data = array();
     public $artifacts_total = 0;
@@ -99,7 +102,7 @@ function processSnapshotFetch( $url, $headers ) {
     }
     
     if ($r[2] === 200) {
-    echo("Response:  ${r[0]} \n");
+        echo("Response:  ${r[0]} \n");
     }
     
     return true;
@@ -171,6 +174,31 @@ function processQueueFile($filepath) {
     return true;
 }
 
+function loadPRIdsQueue() {
+    global $PRList_file;
+    
+    $list = array();
+    if ( file_exists( $PRList_file ) ) {
+        $d = file_get_contents($PRList_file);
+        $list = json_decode($d);
+    }
+    
+    return $list;
+}
+
+function savePRIdsQueue($PRList) {
+    global $PRList_file;
+    
+    $data = json_encode($PRList);
+    
+    file_put_contents($PRList_file, $data);
+}
+
+function clearPRIdsQueue() {
+    global $PRList_file;
+    unlink($PRList_file);
+}
+
 
 $job_lock = $ScriptPath . DIRECTORY_SEPARATOR . '.gha_cron.lock';
 if ( file_exists( $job_lock ) ) {
@@ -181,25 +209,34 @@ if ( file_exists( $job_lock ) ) {
     exit();
 }
 
-
 $timer_start = microtime(true);
 
 $ghalObj = new GithubArtifactList();
 
 $TempDir = $ScriptPath . DIRECTORY_SEPARATOR . TEMP_DIR ;
 $FileRegex = '/^' . preg_quote(GHA_QFILE_PREFIX, '/') . '(.+)' . preg_quote(GHA_QFILE_EXT, '/') . '$/iu';
-
+$PRIdList = loadPRIdsQueue();
 $files = scandir($TempDir);
 foreach( $files as $idx => $file ) {
     if ($file == '.' || $file == '..') {
         continue;
     }
-    if ( false == preg_match($FileRegex, $file) ) {
+    $m = null;
+    if ( false == preg_match($FileRegex, $file, $m) ) {
         continue;
     }
-    
+
     $ts = microtime(true);
     echo("Processing queue file:  $file \n");
+
+    if ( !empty($m) ) {
+        $p = null;
+        $s = preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}/i', $m[1], $p);
+        if ( $s === 1 && count($p) == 3 ) {
+            $PRIdList[] = intval($p[1]);
+        }
+    }
+
     $filepath = $TempDir . $file;
     $status = processQueueFile( $filepath );
     
@@ -207,8 +244,21 @@ foreach( $files as $idx => $file ) {
         unlink( $filepath );
     }
     $n = microtime(true) - $ts;
-    echo("Processing finished in $n seconds.\n\n");
+    printf("Processing finished in %4.2f seconds.\n\n", $n);
+}
+
+if ( count($PRIdList) > 0 && !empty(GHA_QUEUE_NOTICE_URL) ) {
+    $post_data = json_encode($PRIdList);
     
+    echo("Sending PR link update notice for: \n - " . $post_data . "\n");
+    $res = do_curl_post(GHA_QUEUE_NOTICE_URL, $post_data, array('Content-Type: application/json'));
+    if ( $res === false ) {
+        echo(" - Failed \n");
+        savePRIdsQueue($PRIdList);
+    } elseif ( $res[2] == 204 ) {
+        echo(" - OK \n");
+        clearPRIdsQueue();
+    }
 }
 
 if ( file_exists($job_lock) ) {

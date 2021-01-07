@@ -40,6 +40,10 @@ define('STRANDED_FILE_WINDOW', 2);
 // URL to the base artifact listing URL.  All URLs are built from this one.
 define('GHA_LIST_URL', 'https://api.github.com/repos/Mudlet/Mudlet/actions/artifacts');
 
+// URL for sending notification about processed artifacts.
+// Uses POST method and sends application/json list of PR IDs.
+define('GHA_QUEUE_NOTICE_URL', '');
+
 // Regular Expression used to validate and extract IDs from artifact URLs.
 define('GHA_URL_REGEX', '#https?://api\.github\.com/repos/Mudlet/Mudlet/actions/artifacts/(\d+)(?:/|/zip/?)?#iu');
 
