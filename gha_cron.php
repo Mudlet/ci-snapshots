@@ -233,7 +233,10 @@ foreach( $files as $idx => $file ) {
         $p = null;
         $s = preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}/i', $m[1], $p);
         if ( $s === 1 && count($p) == 3 ) {
-            $PRIdList[] = intval($p[1]);
+            $prid = intval($p[1]);
+            if ( !in_array($prid, $PRIdList) ) {
+                $PRIdList[] = $prid;
+            }
         }
     }
 
