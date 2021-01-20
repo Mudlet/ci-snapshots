@@ -24,6 +24,7 @@ require_once('lib/functions.common.php');
 require_once('lib/functions.http.php');
 
 
+$JobLockMaxTTL = 1200; // seconds from lock creation to consider the job expired.
 $PRList_file = $ScriptPath . DIRECTORY_SEPARATOR . TEMP_DIR . '.pr-queue.json';
 
 
@@ -204,8 +205,16 @@ function clearPRIdsQueue() {
 
 $job_lock = $ScriptPath . DIRECTORY_SEPARATOR . '.gha_cron.lock';
 if ( file_exists( $job_lock ) ) {
-    echo("Job already running, quitting. \n");
-    exit();
+    $lock_time = filemtime($job_lock);
+    $lock_exp_time = $lock_time + $JobLockMaxTTL;
+    if (time() < $lock_exp_time) {
+        echo("Job already running, quitting. \n");
+        exit();   
+    } else {
+        echo("Job already running, but lock has expired! \n");
+        unlink($job_lock);
+        exit();
+    }
 } elseif( touch($job_lock) === false ) {
     echo("Could not set job lock, quitting. \n");
     exit();
