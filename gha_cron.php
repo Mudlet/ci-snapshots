@@ -196,7 +196,9 @@ function savePRIdsQueue($PRList) {
 
 function clearPRIdsQueue() {
     global $PRList_file;
-    unlink($PRList_file);
+    if ( file_exists($PRList_file) ) {
+        unlink($PRList_file);
+    }
 }
 
 
