@@ -52,14 +52,15 @@ Optional settings via Headers `Max-Days` and `Max-Downloads` are also supported 
 Due to limitations in Github Actions and Artifacts storage, while a job is running associated artifacts cannot be downloaded.  
 To work around this, workflows can enqueue artifacts by name - assuming the artifact name is unique among other artifacts.  
 Usage of `/gha_queue.php` is the same as `/github_artifacts.php` with one exception.  
-The `id` parameter is replaced with an `artifact_name` parameter and must contain a unique Artifact name.  
+The `id` parameter is replaced with an `artifact_name` parameter and must contain a unique Artifact name.
   
 Example usage:  
 `https://make.mudlet.org/snapshots/gha_queue.php?artifact_name=Mudlet-4.10.1-testing-pr1111-a770ad4d-linux-x64&unzip=1`  
 
 Optional settings via Headers are also supported.  
 
-**Note:** Queue services require a separate cron job! 
+**Note:** Queue services require a separate cron job!
+**Note 2:** This feature requires a OAuth token with the `actions` scope or a personal access token with the `public_repos` scope.
 
 ## Installation Requirements
 This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support.  
