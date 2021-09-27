@@ -47,7 +47,9 @@ define('GHA_QUEUE_NOTICE_URL', '');
 // Regular Expression used to validate and extract IDs from artifact URLs.
 define('GHA_URL_REGEX', '#https?://api\.github\.com/repos/Mudlet/Mudlet/actions/artifacts/(\d+)(?:/|/zip/?)?#iu');
 
-// Authentication token for Github API calls - OAuth or Person Access Token.
+// Authentication token for Github API calls - OAuth or Personal Access Token.
+// An OAuth token needs the "actions" scope
+// A personal access token needs the "public_repos" scope
 define('GHA_AUTH_TOKEN', 'token');
 
 // Timeout in seconds for github artifact request execution.
