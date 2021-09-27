@@ -165,7 +165,11 @@ function getTravisIps()
     $data = array();
     $io = popen('dig +short nat.travisci.net | sort', 'r');
     while ($line = fgets($io)) {
-        $data[] = trim($line);
+        $line = trim($line);
+        $vIP = filter_var($line, FILTER_VALIDATE_IP);
+        if( $vIP !== false ) {
+            $data[] = $vIP;
+        }
     }
     pclose($io);
     return $data;
