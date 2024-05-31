@@ -171,6 +171,78 @@ if (! isSafeExtension($uri_parts['extension'])) {
     ExitFailedRequest("Failed to save {$basename} - Bad Extension\n");
 }
 
+function parseFilename($filename) {
+    $pattern = '/Mudlet-(\d+\.\d+\.\d+)-(windows-\d+)-installer\.exe/';
+    if (preg_match($pattern, $filename, $matches)) {
+        $version = $matches[1];
+        $arch = $matches[2];
+        return [
+            'version' => $version,
+            'arch' => $arch
+        ];
+    } else {
+        return false;
+    }
+}
+
+if ( isset($_REQUEST['release'] && !empty($_REQUEST['release'] && $_REQUEST['release'] == '1') ) {
+    echo("Release detected\n");
+
+    // The file with basename exists in the files subdirectory of the ci-snapshots home
+    $cpCommand = "cp files/.$basename ".MUDLET_DEPLOY_PATH;
+    $returnVar = 0;
+    exec($cpCommand, $output, $returnVar);
+    if ($returnVar !== 0) {
+        ExitFailedRequest("Error copying file: " . implode("\n", $output));
+    }
+    
+    $result = parseFilename($basename);
+    if ($result) {
+        $version = $result['version'];
+        $arch = $result['arch'];
+    } else {
+        ExitFailedRequest("Failed to parse filename for version and arch");
+    }
+    
+    $deployUrl = "https://www.mudlet.org/wp-content/files/$basename";
+    
+    // Calculate SHA256 checksum
+    $sha256sum = trim(exec("shasum -a 256 " . "files/".$basename . " | awk '{print $1}'"));
+
+    echo("SHA: ".$sha256sum."\n");
+    
+    // Prepare cURL request
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => 'https://www.mudlet.org/wp-content/plugins/wp-downloadmanager/download-add.php',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => [
+            'file_type' => 2,
+            'file_remote' => $deployUrl,
+            'file_name' => "Mudlet-{$version} (windows-{$arch})",
+            'file_des' => "sha256: {$sha256sum}",
+            'file_cat' => 0,
+            'file_permission' => -1,
+            'output' => 'json',
+            'do' => 'Add File'
+        ],
+        CURLOPT_HTTPHEADER => [
+            "x-wp-download-token: ".X_WP_DOWNLOAD_TOKEN
+        ]
+    ]);
+    
+    $response = curl_exec($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+    
+    if ($httpCode != 200) {
+        ExitFailedResponse("Error adding file: " . $response);
+    }
+    
+    echo "File uploaded and added successfully.\n";
+} 
+
 if (getSnapshotDirectorySize() >= MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == true) {
     $targetSize = filesize($dl_tmpname);
     $clearedSize = 0;
