@@ -152,7 +152,6 @@ function processQueueFile($filepath) {
     $queue_url = SITE_URL . 'github_artifact.php';
     $headers = array();
     $unzip = ($data['unzip']) ? '1' : '0';
-    $release = ($data['release']) ? '1' : '0';
     
     if (isset($data['id'])) {
         $id = $data['id'];
@@ -167,7 +166,7 @@ function processQueueFile($filepath) {
         $headers[] = 'Max-Downloads: ' . strval( $data['maxdls'] );
     }
     
-    $url = $queue_url . '?id=' . strval($id) . '&unzip=' . $unzip . '&release=' . $release;
+    $url = $queue_url . '?id=' . strval($id) . '&unzip=' . $unzip;
     
     if ( processSnapshotFetch( $url, $headers ) ) {
         unlink($filepath);
