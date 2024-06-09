@@ -108,6 +108,7 @@ if (isset($_SERVER['HTTP_MAX_DOWNLOADS'])) {
     }
 }
 
+
 $artifact_data = array(
     'name' => $artifact_name,
     'unzip' => $unzip,
@@ -122,11 +123,6 @@ if ($maxdays != 0) {
 }
 if ($maxdls != 0) {
     $artifact_data['maxdls'] = $maxdls;
-}
-
-// Ensure that the artifact being queued is marked as a release in the output json
-if ( isset($_REQUEST['release']) ) {
-    $artifact_data['release'] = true;
 }
 
 $queue_json = json_encode($artifact_data);
