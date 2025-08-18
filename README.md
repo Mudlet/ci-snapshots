@@ -63,7 +63,7 @@ Optional settings via Headers are also supported.
 **Note 2:** This feature requires a OAuth token with the `actions` scope or a personal access token with the `public_repos` scope.
 
 ## Installation Requirements
-This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support.  
+This software is powered by PHP and Apache with Mod_Rewrite.  Internationalization requires Intl and gettext php support. Also php module MySQLi and ZipArchive module are needed.
 Most Apache configurations may disable PUT method requests by default, so we need to make some configuration changes to Apache (in Server or VirtualHost areas) in order to enable PUT method requests as well as configure our RewriteMap directive for mod_rewrite.
 The required Apache Directives should be something similar to this:
 
