@@ -81,13 +81,20 @@ The required Apache Directives should be something similar to this:
 
 For local development, this repository includes a complete [Dev Container](https://containers.dev/) configuration. This provides a fully configured development environment with PHP, Apache, and MySQL.
 
-### Quick Start with Dev Containers
+### Quick Start with Dev Containers (Local)
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and [Visual Studio Code](https://code.visualstudio.com/)
 2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) for VS Code
 3. Open this repository in VS Code
 4. Click "Reopen in Container" when prompted (or use Command Palette: `Dev Containers: Reopen in Container`)
 5. Once ready, open `http://localhost:8080` in your browser
+
+### Quick Start with GitHub Codespaces (Cloud)
+
+1. Click the "Code" button on GitHub and select "Codespaces" tab
+2. Click "Create codespace on [branch]"
+3. Wait for the environment to build (2-3 minutes)
+4. Access the web server via the forwarded ports
 
 The development environment will automatically:
 - Set up PHP 8.3 with Apache and all required extensions

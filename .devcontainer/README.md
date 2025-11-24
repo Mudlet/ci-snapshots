@@ -4,17 +4,34 @@ This directory contains the development container configuration for local develo
 
 ## Prerequisites
 
+### For Local Development
 - [Docker Desktop](https://www.docker.com/products/docker-desktop) or [Docker Engine](https://docs.docker.com/engine/install/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 - [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) for VS Code
 
+### For GitHub Codespaces
+No prerequisites needed! Simply open the repository in Codespaces.
+
 ## Quick Start
+
+### Using VS Code Locally
 
 1. Open this repository in Visual Studio Code
 2. When prompted, click "Reopen in Container" (or use Command Palette: `Dev Containers: Reopen in Container`)
 3. Wait for the container to build and start (first time may take a few minutes)
 4. Once the container is ready, open your browser and navigate to `http://localhost:8080`
 5. The database tables will be automatically created on first access
+
+### Using GitHub Codespaces
+
+1. Navigate to the repository on GitHub
+2. Click the "Code" button and select "Codespaces" tab
+3. Click "Create codespace on [branch]"
+4. Wait for the environment to build (2-3 minutes on first run)
+5. Once ready, VS Code will open in your browser with the environment configured
+6. The web server will be automatically port-forwarded - click the "Ports" tab to access it
+
+> **Note**: GitHub Codespaces provides the same development environment as local Dev Containers, running entirely in the cloud.
 
 ## What's Included
 
