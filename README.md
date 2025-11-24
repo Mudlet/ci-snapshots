@@ -77,7 +77,27 @@ The required Apache Directives should be something similar to this:
     Script PUT /path/to/put.php
 
 
-## Installing
+## Local Development
+
+For local development, this repository includes a complete [Dev Container](https://containers.dev/) configuration. This provides a fully configured development environment with PHP, Apache, and MySQL.
+
+### Quick Start with Dev Containers
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and [Visual Studio Code](https://code.visualstudio.com/)
+2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) for VS Code
+3. Open this repository in VS Code
+4. Click "Reopen in Container" when prompted (or use Command Palette: `Dev Containers: Reopen in Container`)
+5. Once ready, open `http://localhost:8080` in your browser
+
+The development environment will automatically:
+- Set up PHP 8.3 with Apache and all required extensions
+- Configure MySQL 8.0 database
+- Create and configure `config.php`, `.htaccess`, and `ip_list` files
+- Create necessary directories with proper permissions
+
+For more details, see [.devcontainer/README.md](.devcontainer/README.md)
+
+## Installing (Production)
 Download and unpack or Clone the software into a PHP-Enabled server directory.  Copy and rename the file `config.exmaple.php` to `config.php` and edit the configuration.  
 Likewise, copy the `ip_list.example` to `ip_list` and edit the tab-separated list data to suit your needs.  
 Ensure that you have created an `.htaccess` file and are using the directives found within `.htaccess.example` to enable the rewrite rules and other security controls.  
