@@ -1,0 +1,36 @@
+{
+	"name": "Mudlet CI Snapshots",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspace",
+	"forwardPorts": [8080, 3306],
+	"portsAttributes": {
+		"8080": {
+			"label": "Web Server",
+			"onAutoForward": "notify"
+		},
+		"3306": {
+			"label": "MySQL",
+			"onAutoForward": "silent"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"bmewburn.vscode-intelephense-client",
+				"xdebug.php-debug",
+				"zobo.php-intellisense",
+				"neilbrayfield.php-docblocker"
+			],
+			"settings": {
+				"php.validate.executablePath": "/usr/local/bin/php",
+				"php.suggest.basic": false,
+				"intelephense.environment.phpVersion": "8.3.0"
+			}
+		}
+	},
+	"postCreateCommand": "bash .devcontainer/setup.sh",
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {}
+	}
+}
