@@ -43,6 +43,19 @@ if [ ! -f /workspace/ip_list ]; then
     echo "ip_list created."
 fi
 
+# Add local development IPs to ip_list if not already present
+if ! grep -q "127.0.0.1" /workspace/ip_list; then
+    echo "Adding local development IPs to ip_list..."
+    cat >> /workspace/ip_list << 'IPLIST'
+
+# Local Development IPs
+127.0.0.1	1	# Localhost
+::1	1	# IPv6 localhost
+172.18.0.0/16	1	# Docker network range
+IPLIST
+    echo "Local development IPs added to ip_list."
+fi
+
 # Create .htaccess from example if it doesn't exist and example exists
 if [ ! -f /workspace/.htaccess ]; then
     if [ -f /workspace/.htaccess.example ]; then
@@ -56,6 +69,61 @@ if [ ! -f /workspace/.htaccess ]; then
     else
         echo "Notice: .htaccess.example not found; skipping .htaccess creation."
     fi
+fi
+
+# Configure Apache for PUT requests and RewriteMap
+echo "Configuring Apache for PUT requests and RewriteMap..."
+
+# Enable required Apache modules
+if command -v a2enmod >/dev/null 2>&1; then
+    a2enmod actions 2>/dev/null || echo "actions module already enabled or unavailable"
+    a2enmod rewrite 2>/dev/null || echo "rewrite module already enabled or unavailable"
+fi
+
+# Update Apache VirtualHost configuration
+if [ -f /etc/apache2/sites-enabled/000-default.conf ]; then
+    echo "Updating Apache VirtualHost configuration..."
+    cat > /etc/apache2/sites-enabled/000-default.conf << 'APACHECONF'
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        DocumentRoot /workspace
+
+        # RewriteMap for IP allowlist
+        RewriteMap allowed "txt:/workspace/ip_list"
+
+        # Handle PUT requests
+        Script PUT /workspace/put.php
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        <Directory /workspace>
+            Options -Indexes +FollowSymLinks
+            AllowOverride All
+            Require all granted
+            
+            # Enable PUT method in directory context
+            <Limit GET POST HEAD PUT OPTIONS>
+                Require all granted
+            </Limit>
+            <LimitExcept GET POST HEAD PUT OPTIONS>
+                Require all denied
+            </LimitExcept>
+        </Directory>
+</VirtualHost>
+APACHECONF
+    
+    # Test Apache configuration
+    if apachectl configtest 2>/dev/null; then
+        echo "Apache configuration is valid."
+        # Reload Apache to apply changes
+        apachectl graceful 2>/dev/null || service apache2 reload 2>/dev/null || echo "Warning: Could not reload Apache."
+        echo "Apache reloaded with new configuration."
+    else
+        echo "Warning: Apache configuration test failed. Please check manually."
+    fi
+else
+    echo "Notice: Apache VirtualHost configuration not found at expected location."
 fi
 
 # Wait for MySQL to be ready
@@ -92,8 +160,16 @@ echo "  Database: ci_snapshots"
 echo "  User: snapshots"
 echo "  Password: snapshots123"
 echo ""
+echo "Apache Configuration:"
+echo "  - PUT method enabled"
+echo "  - RewriteMap configured for IP allowlist"
+echo "  - Local IPs (127.0.0.1, ::1, Docker network) added to ip_list"
+echo ""
 echo "To initialize the database, visit:"
 echo "  http://localhost:8080/index.php"
+echo ""
+echo "To test file uploads:"
+echo "  curl --upload-file ./file.zip http://localhost:80/"
 echo ""
 echo "The application will automatically create required tables on first access."
 echo ""
