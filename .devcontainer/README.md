@@ -47,6 +47,8 @@ The development environment is pre-configured with:
 - **Database User**: `snapshots`
 - **Database Password**: `snapshots123`
 
+> **⚠️ Security Note**: These credentials are for local development only and should never be used in production. Always use strong, unique credentials for production deployments.
+
 ### Customizing Configuration
 
 If you need to modify the configuration:
@@ -78,6 +80,8 @@ You can connect to the MySQL database using:
 - **Database**: `ci_snapshots`
 - **Username**: `snapshots`
 - **Password**: `snapshots123`
+
+> **Note**: These are development-only credentials. Never use these in production environments.
 
 ## Running Cron Jobs
 
