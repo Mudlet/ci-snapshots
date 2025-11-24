@@ -32,7 +32,7 @@ require_once("lib/functions.php");
 
 // MySQL Connection Setup
 try {
-    $dsn = 'mysql: host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
+    $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
     $options = array(
         PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . DB_CHARSET,
     );

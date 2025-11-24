@@ -10,7 +10,7 @@ function CreateSnapshotsTable()
     global $dbh;
     
     $sql = "CREATE TABLE `Snapshots` (
-    `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `file_name` VARCHAR(255) NOT NULL,
     `file_key` VARCHAR(16) NOT NULL,
     `time_created` DATETIME NOT NULL,
@@ -112,7 +112,7 @@ function CreateUsersTable()
     global $dbh;
     
     $sql = "CREATE TABLE `Users` (
-    `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(128) NOT NULL DEFAULT 'NULL',
     `phash` VARCHAR(255) NOT NULL DEFAULT 'NULL',
     PRIMARY KEY (`id`)
@@ -176,7 +176,7 @@ function CreateLogUploadsTable()
     global $dbh;
     
     $sql = 'CREATE TABLE `LogUploads` (
-      `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+      `id` INTEGER NOT NULL AUTO_INCREMENT,
       `user_id` INTEGER NOT NULL DEFAULT 0,
       `file_size` INTEGER NOT NULL,
       `event_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -233,7 +233,7 @@ function CreateLogDownloadsTable()
     global $dbh;
     
     $sql = 'CREATE TABLE `LogDownloads` (
-      `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+      `id` INTEGER NOT NULL AUTO_INCREMENT,
       `user_id` INTEGER NOT NULL DEFAULT 0,
       `file_size` INTEGER NOT NULL,
       `event_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
