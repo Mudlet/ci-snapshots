@@ -134,11 +134,7 @@ if (isset($_GET['dl'])) {
                         '<span class="filesize">' . _('DL #') . '</span>' .
                         '<span class="filegitlinks">' . _('Github') . '</span>' .
                     "</span></li>\n";
-        $latest_branch_snaps = array(
-            'windows' => null,
-            'linux'   => null,
-            'macos'   => null,
-        );
+        $latest_branch_snaps = [];
         $branch_names        = array( 'pull-request', 'branch' ); // defaults needed for client-side js.
         $branch_options      = '';
 
@@ -170,7 +166,7 @@ if (isset($_GET['dl'])) {
 
             // should probably start pushing explicit data to the DB instead of doing this regex stuff
             // but that would be more complicated in CI...
-            preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}/i', $fname, $m);
+            preg_match('/(?:-PR([0-9]+))?-([a-f0-9]{5,9})[\.-]{1}([^.]+)/i', $fname, $m);
             preg_match('/\d+(?:\.\d+)+-(ptb)-(?:PR\d+-|\d+-)?/i', $fname, $bm);
 
             // Build? Branch?  The regex pulls exact match but this code is extensible.
@@ -188,7 +184,7 @@ if (isset($_GET['dl'])) {
 
             $source_class = 'branch ' . $branch_class;
             $gitLinks     = $PR_ID = $Commit_ID = '';
-            if (count($m) == 3) {
+            if (count($m) == 4) {
                 if (! empty($m[1])) {
                     $source_class = 'pull-request ' . $branch_class;
                     $git_url = 'https://github.com/Mudlet/Mudlet/pull/' . $m[1];
@@ -202,7 +198,7 @@ if (isset($_GET['dl'])) {
                     $Commit_ID = '<a href="' . $git_url . '" title="' . $git_ttl . '">' .
                                  '<i class="far fa-code-commit"></i></a>';
                 }
-            } elseif (count($m) == 2) {
+            } elseif (count($m) == 3) {
                 if (! empty($m[2])) {
                     $git_url = 'https://github.com/Mudlet/Mudlet/commit/' . $m[2];
                     $git_ttl = _('View Commit on Github.com');
@@ -236,6 +232,8 @@ if (isset($_GET['dl'])) {
                 $platform_type = 'macos';
             }
 
+            $flavour_type = $m[3];
+
             $item_classes = implode(' ', array( $platform_type, $source_class ));
 
             $item_link = '<a class="filename" href="' . $url . '" rel="nofollow">' . $platform_icon . $fname . '</a>';
@@ -262,18 +260,22 @@ if (isset($_GET['dl'])) {
             // if ( strpos($source_class, 'branch') !== false && (empty($inputSource) ||
             //      (strpos($source_class, $inputSource) !== false && !empty($inputSource))) ) {
             if (strpos($source_class, 'branch') !== false && strpos($source_class, 'ptb') !== false) {
-                if ($latest_branch_snaps['windows'] == null && $platform_type == 'windows') {
-                    $latest_branch_snaps['windows'] = '<span class="windows"><label>Windows:</label> ' . $item_link .
+                $key_name = $platform_type . '-' . $flavour_type;
+                if(array_key_exists($key_name, $latest_branch_snaps)){
+                    continue;
+                }
+                if ($platform_type == 'windows') {
+                    $latest_branch_snaps[$key_name] = '<span class="windows"><label>Windows (' . $flavour_type . '):</label> ' . $item_link .
                                                       '</span>';
                 }
 
-                if ($latest_branch_snaps['linux'] == null && $platform_type == 'linux') {
-                    $latest_branch_snaps['linux'] = '<span class="linux"><label>Linux:</label> ' . $item_link .
+                if ($platform_type == 'linux') {
+                    $latest_branch_snaps[$key_name] = '<span class="linux"><label>Linux (' . $flavour_type . '):</label> ' . $item_link .
                                                     '</span>';
                 }
 
-                if ($latest_branch_snaps['macos'] == null && $platform_type == 'macos') {
-                    $latest_branch_snaps['macos'] = '<span class="macos"><label>Mac OS X:</label> ' . $item_link .
+                if ($platform_type == 'macos') {
+                    $latest_branch_snaps[$key_name] = '<span class="macos"><label>Mac OS X (' . $flavour_type . '):</label> ' . $item_link .
                                                     '</span>';
                 }
             }
