@@ -63,20 +63,11 @@ if command -v mysql >/dev/null 2>&1; then
     echo "Waiting for MySQL to be ready..."
     max_attempts=30
     attempt=0
-    # Create a temporary MySQL client config file
-    cat > /tmp/mysql-check.cnf << EOF
-[client]
-host=db
-user=snapshots
-password=snapshots123
-EOF
-    chmod 600 /tmp/mysql-check.cnf
-    until mysql --defaults-extra-file=/tmp/mysql-check.cnf -e "SELECT 1" &> /dev/null || [ $attempt -eq $max_attempts ]; do
+    until mysql -e "SELECT 1" &> /dev/null || [ $attempt -eq $max_attempts ]; do
         attempt=$((attempt + 1))
         echo "Waiting for MySQL... (attempt $attempt/$max_attempts)"
         sleep 2
     done
-    rm -f /tmp/mysql-check.cnf
     if [ $attempt -eq $max_attempts ]; then
         echo "Warning: Could not connect to MySQL after $max_attempts attempts."
         echo "Database initialization will happen when you first access the application."

@@ -48,6 +48,15 @@ RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 # Set working directory
 WORKDIR /workspace
 
+# Create MySQL client configuration to skip SSL
+RUN mkdir -p /etc/mysql/conf.d && \
+    echo "[client]" > /etc/mysql/conf.d/client.cnf && \
+    echo "skip-ssl" >> /etc/mysql/conf.d/client.cnf && \
+    echo "host=db" >> /etc/mysql/conf.d/client.cnf && \
+    echo "user=snapshots" >> /etc/mysql/conf.d/client.cnf && \
+    echo "password=snapshots123" >> /etc/mysql/conf.d/client.cnf && \
+    echo "database=ci_snapshots" >> /etc/mysql/conf.d/client.cnf
+
 # Create necessary directories with proper permissions
 RUN mkdir -p /workspace/files /workspace/tmp \
     && chown -R www-data:www-data /workspace
