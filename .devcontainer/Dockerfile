@@ -45,6 +45,11 @@ RUN a2enmod rewrite headers
 # Configure Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+# Update Apache DocumentRoot to point to /workspace
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /workspace|g' /etc/apache2/sites-available/000-default.conf && \
+    sed -i 's|<Directory /var/www/>|<Directory /workspace/>|g' /etc/apache2/apache2.conf && \
+    sed -i '/<Directory \/workspace\//,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+
 # Set working directory
 WORKDIR /workspace
 
