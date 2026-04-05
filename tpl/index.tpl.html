@@ -200,6 +200,39 @@ footer a {
   display: inline-block;
 }
 
+.sha256-toggle {
+  margin-left: 0.6em;
+  font-size: 0.85em;
+}
+.sha256-btn {
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.8em;
+  padding: 1px 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #f5f5f5;
+  color: #555;
+  vertical-align: middle;
+}
+.sha256-btn:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+.sha256-hash {
+  display: none;
+  margin-left: 0.4em;
+  font-size: 0.85em;
+  color: #555;
+  word-break: break-all;
+  user-select: all;
+  vertical-align: middle;
+}
+.sha256-hash.visible {
+  display: inline;
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     filter: invert(1) hue-rotate(.5turn);
@@ -259,6 +292,16 @@ footer a {
   {L_FOOTER_LINKS}
 </footer>
 
+<script>
+function toggleSha256(btn) {
+  var hashEl = btn.parentNode.querySelector('.sha256-hash');
+  if (hashEl.classList.contains('visible')) {
+    hashEl.classList.remove('visible');
+  } else {
+    hashEl.classList.add('visible');
+  }
+}
+</script>
 <script src="{SITE_URL}tpl/js/js.cookie.js"></script>
 <script src="{SITE_URL}tpl/js/jquery-3.4.1.slim.min.js"></script>
 <script>

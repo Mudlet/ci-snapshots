@@ -238,7 +238,23 @@ if (isset($_GET['dl'])) {
 
             $item_link = '<a class="filename" href="' . $url . '" rel="nofollow">' . $platform_icon . $fname . '</a>';
 
-            $item = $item_link . '<span class="fileinfo">' .
+            // Check for companion .sha256 file
+            $sha256_html = '';
+            $sha256_filepath = $filepath . '.sha256';
+            if (is_file($sha256_filepath) && is_readable($sha256_filepath)) {
+                $sha256_content = trim(file_get_contents($sha256_filepath));
+                // sha256sum output format: "hash  filename" - extract just the hash
+                $sha256_parts = preg_split('/\s+/', $sha256_content, 2);
+                if (!empty($sha256_parts[0]) && preg_match('/^[a-f0-9]{64}$/i', $sha256_parts[0])) {
+                    $sha256_hash = $sha256_parts[0];
+                    $sha256_html = '<span class="sha256-toggle">' .
+                                   '<a href="#" class="sha256-btn" onclick="toggleSha256(this);return false;" title="' . _('Show SHA256 checksum') . '">SHA256</a>' .
+                                   '<code class="sha256-hash">' . htmlspecialchars($sha256_hash) . '</code>' .
+                                   '</span>';
+                }
+            }
+
+            $item = $item_link . $sha256_html . '<span class="fileinfo">' .
                     '<span class="filetime" data-isotime="' . $datetime8601 . '">' . $datetime .
                     '</span><span class="filesize">' . $filesize . '</span>' .
                     '<span class="filetime" data-isotime="' . $exdatetime8601 . '">' . $exdatetime . '</span>' .
