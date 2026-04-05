@@ -107,7 +107,8 @@ if ( isset($jdata['archive_download_url']) ) {
 }
 
 
-// if we unzip, we must have only one file in the ZIP - exe, tar, etc.
+// if we unzip, we extract the main file from the ZIP - exe, tar, etc.
+// Companion files like .sha256 checksums are also extracted alongside it.
 // if we don't unzip, we need to build the artifact name using JSON data and .zip extension.
 if ($unzip) {
     $zip = new ZipArchive();
@@ -119,16 +120,30 @@ if ($unzip) {
         ExitFailedRequest('Artifact archive failed to open');
     }
 
-    if ( $zip->numFiles > 1 ) {
-        $nfiles = $zip->numFiles;
-        
-        @$zip->close();
-        @unlink($dl_tmpname);
-        ExitFailedRequest('Artifact archive contains more than 1 file - ' . strval($nfiles) );
+    // Find the main artifact file (not a companion like .sha256)
+    $artifact_filename = null;
+    $companion_files = array();
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $fname = $zip->statIndex($i)['name'];
+        if (preg_match('/\.sha256$/', $fname)) {
+            $companion_files[] = $fname;
+        } else {
+            if ($artifact_filename !== null) {
+                @$zip->close();
+                @unlink($dl_tmpname);
+                ExitFailedRequest('Artifact archive contains multiple main files - ' . strval($zip->numFiles));
+            }
+            $artifact_filename = $fname;
+        }
     }
 
-    $fstat = $zip->statIndex( 0 );
-    $artifact_filename = $fstat['name'];
+    if ($artifact_filename === null) {
+        @$zip->close();
+        @unlink($dl_tmpname);
+        ExitFailedRequest('Artifact archive contains no main file');
+    }
+
+    $fstat = $zip->statIndex($zip->locateName($artifact_filename));
 
     if ( strpos($artifact_filename, '/') !== false || strpos($artifact_filename, '\\') !== false ) {
         @$zip->close();
@@ -139,8 +154,12 @@ if ($unzip) {
     $artifact_tmpname = dirname($dl_tmpname) . DIRECTORY_SEPARATOR . $artifact_filename;
     $ext_dir = dirname( $dl_tmpname );
 
-    // extraction should result in a path matching that of $artifact_tmpname
+    // Extract the main artifact file
     $exs = $zip->extractTo($ext_dir, array($artifact_filename));
+    // Also extract companion files (.sha256 checksums) alongside it
+    if (!empty($companion_files)) {
+        $zip->extractTo($ext_dir, $companion_files);
+    }
     $zip->close();
     @unlink($dl_tmpname);
 
@@ -199,6 +218,17 @@ $snapshot_path = $snapshot_ids[0];
 $snapshot_url = $snapshot_ids[1];
 $snapshot_uid = $snapshot_ids[2];
 if (rename($dl_tmpname, $snapshot_path)) {
+    // Move companion files (.sha256 checksums) alongside the main artifact
+    if (isset($companion_files) && !empty($companion_files)) {
+        foreach ($companion_files as $cfile) {
+            $cfile_tmp = $ext_dir . DIRECTORY_SEPARATOR . $cfile;
+            if (file_exists($cfile_tmp)) {
+                $cfile_dest = $ScriptPath . '/' . UPLOAD_DIR . $snapshot_uid . '_' . $cfile;
+                rename($cfile_tmp, $cfile_dest);
+            }
+        }
+    }
+
     $maxdays = DEFAULT_FILE_LIFETIME_DAYS;
     if (isset($_SERVER['HTTP_MAX_DAYS'])) {
         if (preg_match('/^[0-9]+$/i', $_SERVER['HTTP_MAX_DAYS']) === 1) {
@@ -211,10 +241,10 @@ if (rename($dl_tmpname, $snapshot_path)) {
             $maxdl = intval($_SERVER['HTTP_MAX_DOWNLOADS']);
         }
     }
-    
+
     echo($snapshot_url);
     echo("\n");
-    
+
     AddNewSnapshot($basename, $snapshot_uid, $maxdays, $maxdl);
     AddUploadLogRecord($snapshot_path);
 } else {
