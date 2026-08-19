@@ -1,7 +1,7 @@
 <?php
 /***
 *  This file allows provides a queue system for artifacts.
-*  Artifact names given to this system must be unique within the artifacts list, having unique Build IDs.
+*  Where a name matches several artifacts - a job re-run uploads a second under the same name - the newest is used.
 *
 ***/
 
@@ -72,27 +72,29 @@ if ( ! isset($list_data['artifacts']) ) {
     ExitFailedRequest('Failed to find artifacts');
 }
 
-$artifact_is_unique = true;
 $artifact_id = null;
+$artifact_created = -1;
 if ( !empty($list_data['artifacts']) ) {
-    // check existing artifacts for 0 or 1 instance of the given name.
-    // hopefully we can get away with just checking the first 100 entries.
-    // it seems to list the latest fisrt anyways... 
-    $found=0;
+    // A name can legitimately match more than once: re-running a build job uploads a second
+    // artifact under the same name. Pick the newest by creation time rather than trusting the
+    // order the API happens to return, so a re-run publishes its own build and not the stale
+    // one from the earlier attempt.
+    // Only the first 100 entries are searched, so a name can still drop out of the window.
     foreach( $list_data['artifacts'] as $idx => $arti ) {
-        if ( $artifact_name == $arti['name'] ) {
-            $found = $found + 1;
+        if ( $artifact_name != $arti['name'] ) {
+            continue;
+        }
+
+        $created = isset($arti['created_at']) ? strtotime($arti['created_at']) : false;
+        if ( $created === false ) {
+            $created = 0;
+        }
+
+        if ( $created > $artifact_created ) {
+            $artifact_created = $created;
             $artifact_id = $arti['id'];
         }
-        
-        if ( $found > 1 ) {
-            $artifact_is_unique = false;
-        }
     }
-}
-
-if (!$artifact_is_unique) {
-    ExitClientError('Artifact is not unique');
 }
 
 $maxdays = 0;
