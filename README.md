@@ -19,6 +19,15 @@ Additional Headers may also be sent with PUT requests:
  `Max-Days` - Controls the expiration time of the uploaded file.  
  `Max-Downloads` - Controls expiration based on File Downloads as well as time, whichever happens first.  
 
+### Storage limits
+When storage goes over `MAX_CAPACITY_BYTES`, snapshots are removed to make room, most expendable first.  Build type, PR number and platform are read from the CI filename (e.g. `Mudlet-4.19.1-testing-pr1234-a1b2c3d4-linux-x64.AppImage` or `Mudlet-4.19.1-ptb-2026-09-28-a1b2c3d4-windows-64.exe`):  
+ 1. builds superseded by a newer upload of the same PR (or branch) and platform  
+ 2. the latest build of each PR  
+ 3. the latest branch build of each platform, and uploads with unrecognised names  
+ 4. PTBs other than the newest of each platform  
+
+Within each step the oldest go first.  The newest PTB of each platform is never removed for space, only when it expires, so a burst of PR builds cannot take down the files the updater links to.  Companion files such as `.sha256` checksums are removed together with their snapshot.  
+
 To test access to Snapshots use:  
 `https://make.mudlet.org/snapshots/knock/`  
     - Returns:  `Known`  
