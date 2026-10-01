@@ -99,7 +99,7 @@ if ($dirSize > MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == true) {
         print("Removed {$cleared['files']} snapshots to free space ({$totalSizeStr}) \n\n");
     }
     if ($cleared['bytes'] < $targetSize) {
-        print("Could not free enough space without removing the newest PTB of each platform\n\n");
+        print("Could not free enough space without removing the newest PTBs of each platform\n\n");
     }
 }
 

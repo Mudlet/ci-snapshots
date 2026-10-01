@@ -11,8 +11,13 @@ define('EVICT_TIER_SUPERSEDED_BUILD', 0);
 define('EVICT_TIER_PR_BUILD', 1);
 define('EVICT_TIER_OTHER_BUILD', 2);
 define('EVICT_TIER_SUPERSEDED_PTB', 3);
-// The newest PTB of each flavour is never evicted for space - the updater links to it.
+// The newest PTBs of each flavour are never evicted for space - the updater links to them.
 define('EVICT_TIER_PROTECTED', 4);
+
+// Fallback for config.php files that predate this setting.
+if (!defined('MIN_PTBS_KEPT_PER_PLATFORM')) {
+    define('MIN_PTBS_KEPT_PER_PLATFORM', 3);
+}
 
 // Companion files stored next to a snapshot, named "{key}_{file_name}{suffix}".
 $SnapshotCompanionSuffixes = array('.sha256');
@@ -68,42 +73,42 @@ function ClassifySnapshotName($fileName)
  */
 function GetSnapshotEvictionOrder($rows)
 {
-    $newestInGroup = array();
-    $entries = array();
+    $groups = array();
     foreach ($rows as $row) {
         $info = ClassifySnapshotName($row['file_name']);
-        $group = $info['kind'] . '|' . strval($info['pr']) . '|' . $info['flavour'];
-        $entries[] = array('row' => $row, 'info' => $info, 'group' => $group);
-
-        if (!isset($newestInGroup[$group]) || IsSnapshotNewer($row, $newestInGroup[$group])) {
-            $newestInGroup[$group] = $row;
-        }
+        $row['kind'] = $info['kind'];
+        $groups[$info['kind'] . '|' . strval($info['pr']) . '|' . $info['flavour']][] = $row;
     }
 
     $candidates = array();
-    foreach ($entries as $entry) {
-        $row = $entry['row'];
-        $kind = $entry['info']['kind'];
-        $newest = ($newestInGroup[$entry['group']]['id'] == $row['id']);
+    foreach ($groups as $group) {
+        usort($group, function ($a, $b) {
+            return IsSnapshotNewer($a, $b) ? -1 : (IsSnapshotNewer($b, $a) ? 1 : 0);
+        });
 
-        if ($kind === 'ptb') {
-            $tier = $newest ? EVICT_TIER_PROTECTED : EVICT_TIER_SUPERSEDED_PTB;
-        } elseif ($kind === 'other') {
-            // Unrecognised names (manual uploads) have no meaningful grouping.
-            $tier = EVICT_TIER_OTHER_BUILD;
-        } elseif (!$newest) {
-            $tier = EVICT_TIER_SUPERSEDED_BUILD;
-        } elseif ($kind === 'pr') {
-            $tier = EVICT_TIER_PR_BUILD;
-        } else {
-            $tier = EVICT_TIER_OTHER_BUILD;
-        }
+        // $rank 0 is the newest upload in the group.
+        foreach ($group as $rank => $row) {
+            $kind = $row['kind'];
+            if ($kind === 'ptb') {
+                $tier = ($rank < MIN_PTBS_KEPT_PER_PLATFORM) ? EVICT_TIER_PROTECTED : EVICT_TIER_SUPERSEDED_PTB;
+            } elseif ($kind === 'other') {
+                // Unrecognised names (manual uploads) have no meaningful grouping.
+                $tier = EVICT_TIER_OTHER_BUILD;
+            } elseif ($rank > 0) {
+                $tier = EVICT_TIER_SUPERSEDED_BUILD;
+            } elseif ($kind === 'pr') {
+                $tier = EVICT_TIER_PR_BUILD;
+            } else {
+                $tier = EVICT_TIER_OTHER_BUILD;
+            }
 
-        if ($tier === EVICT_TIER_PROTECTED) {
-            continue;
+            if ($tier === EVICT_TIER_PROTECTED) {
+                continue;
+            }
+            unset($row['kind']);
+            $row['evict_tier'] = $tier;
+            $candidates[] = $row;
         }
-        $row['evict_tier'] = $tier;
-        $candidates[] = $row;
     }
 
     usort($candidates, function ($a, $b) {
