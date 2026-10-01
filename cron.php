@@ -19,11 +19,10 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $totalFiles = 0;
 $totalSize = 0;
 foreach ($rows as $idx => $row) {
-    $filepath = getSnapshotFilePath($row['file_name'], $row['file_key']);
-    if (is_file($filepath)) {
-        $totalSize = $totalSize + filesize($filepath);
+    $freed = DeleteSnapshotFiles($row['file_name'], $row['file_key']);
+    if ($freed !== false) {
+        $totalSize = $totalSize + $freed;
         $totalFiles = $totalFiles + 1;
-        unlink($filepath);
     }
     RemoveSnapshotByID($row['id']);
 }
@@ -51,6 +50,10 @@ foreach ($dir_list as $idx => $file) {
     if (count($file_parts) >= 2) {
         $file_key = $file_parts[0];
         $file_name = str_replace($file_key . '_', '', $file);
+        $parent_name = GetCompanionParentName($file_name);
+        if ($parent_name !== false) {
+            $file_name = $parent_name;
+        }
         
         if (! CheckSnapshotExists($file_name, $file_key)) {
             $windowSeconds = 3600 * STRANDED_FILE_WINDOW;
@@ -81,44 +84,22 @@ if ($totalStranded > 0) {
 $dirSize = getSnapshotDirectorySize();
 if ($dirSize > MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == true) {
     $targetSize = ($dirSize - MAX_CAPACITY_BYTES);
-    $clearedSize = 0;
-    $totalClearedFiles = 0;
-    $totalClearedRecords = 0;
     
     $sizeOverStr = human_filesize($targetSize);
     $sizeMaxStr = human_filesize(MAX_CAPACITY_BYTES);
     echo "Snapshot Storage is at maximum capacity! - {$sizeOverStr} over the max of {$sizeMaxStr}\n";
     
-    $stmt = $dbh->prepare("SELECT `id`, `file_name`, `file_key`, `time_created` 
-                           FROM `Snapshots`
-                           ORDER BY `time_created` ASC
-                           LIMIT 20 ");
-    $stmt->execute();
+    $cleared = FreeSnapshotSpace($targetSize);
     
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $delFilePath = getSnapshotFilePath($row['file_name'], $row['file_key']);
-        if (is_file($delFilePath)) {
-            $clearedSize = $clearedSize + filesize($delFilePath);
-            $totalClearedFiles = $totalClearedFiles + 1;
-            unlink($delFilePath);
-            RemoveSnapshotByID($row['id']);
-        } else {
-            // File not found, we should remove this record!
-            $totalClearedRecords = $totalClearedRecords + 1;
-            RemoveSnapshotByID($row['id']);
-        }
-        
-        if ($clearedSize >= $targetSize) {
-            break;
-        }
+    if ($cleared['records'] > 0) {
+        print("Removed {$cleared['records']} record(s) with missing files\n");
     }
-    
-    if ($totalClearedRecords > 0) {
-        print("Removed {$totalClearedRecords} record(s) with missing files\n");
+    if ($cleared['files'] > 0) {
+        $totalSizeStr = human_filesize($cleared['bytes']);
+        print("Removed {$cleared['files']} snapshots to free space ({$totalSizeStr}) \n\n");
     }
-    if ($totalClearedFiles > 0) {
-        $totalSizeStr = human_filesize($clearedSize);
-        print("Removed {$totalClearedFiles} old snapshots ({$totalSizeStr}) \n\n");
+    if ($cleared['bytes'] < $targetSize) {
+        print("Could not free enough space without removing the newest PTBs of each platform\n\n");
     }
 }
 

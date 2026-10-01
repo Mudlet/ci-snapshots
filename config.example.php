@@ -24,11 +24,21 @@ define('ALLOWED_FILE_EXT', 'exe,msi,bin,dmg,zip,tar,gz,tz,xz,AppImage');
 define('DEFAULT_FILE_LIFETIME_DAYS', 14);
 
 // The maximum storage space set aside for this software.
-// Any storage over this amount is pruned by oldest file first.
+// Any storage over this amount is pruned in this order, oldest first within each step:
+//   1. builds superseded by a newer upload of the same PR (or branch) and platform
+//   2. the latest build of each PR
+//   3. the latest branch build of each platform, and unrecognised uploads
+//   4. PTBs beyond the newest MIN_PTBS_KEPT_PER_PLATFORM of each platform
+// The newest MIN_PTBS_KEPT_PER_PLATFORM PTBs of each platform are never pruned for space,
+// only when they expire.
 define('MAX_CAPACITY_BYTES', 37580960000);
 
+// Number of most recent PTBs per platform (Windows, Linux, macOS x86_64, macOS arm64, ...)
+// that are protected from capacity pruning.
+define('MIN_PTBS_KEPT_PER_PLATFORM', 3);
+
 // Toggle PUT response when MAX_CAPACITY_BYTES is reached.
-//  True - delete the oldest stored snapshot(s) to make space for new file.
+//  True - delete stored snapshot(s), in the order above, to make space for new file.
 //  False - respond with an error code.
 define('MAX_CAPACITY_DELETE_OLDEST', true);
 
