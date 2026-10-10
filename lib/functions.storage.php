@@ -131,7 +131,8 @@ function IsSnapshotNewer($a, $b)
 
 /**
  * Delete a snapshot's file and its companion files from disk.
- * Returns the number of bytes freed, or false if the snapshot file was already missing.
+ * Returns array('found' => bool, 'bytes' => int): whether the snapshot file itself existed, and
+ * the bytes freed - which includes companion files even when the snapshot file was missing.
  */
 function DeleteSnapshotFiles($fileName, $fileKey)
 {
@@ -151,7 +152,7 @@ function DeleteSnapshotFiles($fileName, $fileKey)
         }
     }
 
-    return $found ? $freed : false;
+    return array('found' => $found, 'bytes' => $freed);
 }
 
 /**
@@ -191,15 +192,15 @@ function FreeSnapshotSpace($bytesToFree)
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach (GetSnapshotEvictionOrder($rows) as $row) {
-        $freed = DeleteSnapshotFiles($row['file_name'], $row['file_key']);
+        $deleted = DeleteSnapshotFiles($row['file_name'], $row['file_key']);
         RemoveSnapshotByID($row['id']);
-        if ($freed === false) {
+        $result['bytes'] += $deleted['bytes'];
+        if ($deleted['found']) {
+            $result['files'] += 1;
+        } else {
             $result['records'] += 1;
-            continue;
         }
 
-        $result['files'] += 1;
-        $result['bytes'] += $freed;
         if ($result['bytes'] >= $bytesToFree) {
             break;
         }

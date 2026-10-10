@@ -19,9 +19,9 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $totalFiles = 0;
 $totalSize = 0;
 foreach ($rows as $idx => $row) {
-    $freed = DeleteSnapshotFiles($row['file_name'], $row['file_key']);
-    if ($freed !== false) {
-        $totalSize = $totalSize + $freed;
+    $deleted = DeleteSnapshotFiles($row['file_name'], $row['file_key']);
+    $totalSize = $totalSize + $deleted['bytes'];
+    if ($deleted['found']) {
         $totalFiles = $totalFiles + 1;
     }
     RemoveSnapshotByID($row['id']);
