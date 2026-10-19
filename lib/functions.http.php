@@ -4,6 +4,11 @@ if (!defined("CI_SNAPSHOTS")) {
     exit();
 }
 
+// Fallback for config.php files that predate this setting.
+if (!defined('GHA_NOTICE_CURL_TIMEOUT')) {
+    define('GHA_NOTICE_CURL_TIMEOUT', 50);
+}
+
 function SetStatusHeader($code=200, $msg='OK') {
     $sapi = substr(php_sapi_name(), 0, 3);
     if ($sapi == 'cgi' || $sapi == 'fpm') {
@@ -175,7 +180,7 @@ function do_curl_post($url, $data='', $send_headers=array(), $err400=true) {
         return false;
     }
     
-    $timeout_limit = GHA_CURL_TIMEOUT;
+    $timeout_limit = GHA_NOTICE_CURL_TIMEOUT;
     set_time_limit($timeout_limit + 30);
     
     $rtime_start = time();
