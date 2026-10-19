@@ -66,6 +66,10 @@ define('GHA_AUTH_TOKEN', 'token');
 // this value controls the max time a request/download can take.
 define('GHA_CURL_TIMEOUT', 180);
 
+// Timeout in seconds for the ping to GHA_QUEUE_NOTICE_URL. A failed ping is retried on
+// the next cron run, so this is kept short to not stall the run on a slow endpoint.
+define('GHA_NOTICE_CURL_TIMEOUT', 50);
+
 // Enforce HTTP Auth for GHA requests, similarly to PUT_REQUIRES_AUTH
 define('GHA_REQUIRES_AUTH', false);
 
