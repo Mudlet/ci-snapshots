@@ -51,27 +51,8 @@ fclose($tmpfp);
 fclose($putdata);
 
 
-if (getSnapshotDirectorySize() >= MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == true) {
-    $targetSize = filesize($tmpname);
-    $clearedSize = 0;
-    
-    $stmt = $dbh->prepare("SELECT `file_name`, `file_key`, `time_created` 
-                           FROM `Snapshots`
-                           ORDER BY `time_created` ASC
-                           LIMIT 10 ");
-    $stmt->execute();
-    
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $delFilePath = getSnapshotFilePath($row['file_name'], $row['file_key']);
-        if (is_file($delFilePath)) {
-            $clearedSize = $clearedSize + filesize($delFilePath);
-            unlink($delFilePath);
-        }
-        
-        if ($clearedSize >= $targetSize) {
-            break;
-        }
-    }
+if (MAX_CAPACITY_DELETE_OLDEST == true) {
+    MakeRoomForSnapshot(filesize($tmpname));
 }
 
 $snapshot_ids = makeSnapshotFileIDs($basename);
