@@ -34,11 +34,6 @@ if (GHA_REQUIRES_AUTH) {
     }
 }
 
-if (getSnapshotDirectorySize() >= MAX_CAPACITY_BYTES && MAX_CAPACITY_DELETE_OLDEST == false) {
-    ExitFullStorage();
-}
-
-
 $unzip = false;
 if ( isset($_REQUEST['unzip']) ) {
     $unzip = filter_var($_REQUEST['unzip'], FILTER_VALIDATE_BOOLEAN);
@@ -48,187 +43,36 @@ if ( isset($_REQUEST['unzip']) ) {
 
 
 $ghaid = 0;
-$ghaurl = '';
 if (isset($_REQUEST['id']) && !empty($_REQUEST['id'])) {
-    // build artifact_url
     $ghaid = filter_var($_REQUEST['id'], FILTER_VALIDATE_INT);
     if ($ghaid === false) {
         ExitClientError('id parameter is not acceptable');
     }
-    $ghaurl = GHA_LIST_URL . '/' . $ghaid ;
 } else {
     ExitClientError('Missing required parameter id');
 }
 
-$req = do_curl_get($ghaurl, array('Authorization: token ' . GHA_AUTH_TOKEN));
-
-if ($req === false) {
-    ExitFailedRequest('Failed to fetch Artifact data');
+$maxdays = DEFAULT_FILE_LIFETIME_DAYS;
+if (isset($_SERVER['HTTP_MAX_DAYS'])) {
+    if (preg_match('/^[0-9]+$/i', $_SERVER['HTTP_MAX_DAYS']) === 1) {
+        $maxdays = intval($_SERVER['HTTP_MAX_DAYS']);
+    }
 }
-if ($req[2] === 404) {
-    ExitClientError('Artifact not found - ID# ' . strval($ghaid) . ' Returned: ' . strval($req[2]) );
-}
-if ($req[2] !== 200) {
-    ExitClientError('Artifact fetch error - ID# ' . strval($ghaid) . ' Returned: ' . strval($req[2]) );
-}
-
-
-$jdata = json_decode($req[0], true);
-if ($jdata === null) {
-    $eid = json_last_error();
-    ExitFailedRequest('Failed to parse Artifact JSON - ' . strval($eid));
+$maxdl = 0;
+if (isset($_SERVER['HTTP_MAX_DOWNLOADS'])) {
+    if (preg_match('/^[0-9]+$/i', $_SERVER['HTTP_MAX_DOWNLOADS']) === 1) {
+        $maxdl = intval($_SERVER['HTTP_MAX_DOWNLOADS']);
+    }
 }
 
-
-$dl_tmpname = getTempFileName();
-if ( isset($jdata['archive_download_url']) ) {
-    $dl_url = $jdata['archive_download_url'];
-    if (empty($dl_url) || false == preg_match(GHA_URL_REGEX, $dl_url)) {
-        @unlink($dl_tmpname);
-        ExitFailedRequest('Archive download url is invalid');
-    }
-    
-    $dl_req = do_curl_download($dl_url, $dl_tmpname, array('Authorization: token ' . GHA_AUTH_TOKEN));
-    if ($dl_req === false) {
-        @unlink($dl_tmpname);
-        ExitFailedRequest('Artifact archive download failed');
-    }
-    if ($dl_req[2] === 404) {
-        @unlink($dl_tmpname);
-        ExitClientError('Artifact archive not found - ID# ' . strval($ghaid) . ' Returned: ' . strval($dl_req[2]) );
-    }
-    if ($dl_req[2] !== 200) {
-        @unlink($dl_tmpname);
-        ExitClientError('Artifact archive fetch error - ID# ' . strval($ghaid) . ' Returned: ' . strval($dl_req[2]) );
-    }
-} else {
-    @unlink($dl_tmpname);
-    ExitFailedRequest('Artifact JSON data is missing `archive_download_url` member');
-}
-
-
-// if we unzip, we extract the main file from the ZIP - exe, tar, etc.
-// Companion files like .sha256 checksums are also extracted alongside it.
-// if we don't unzip, we need to build the artifact name using JSON data and .zip extension.
-if ($unzip) {
-    $zip = new ZipArchive();
-    $res = $zip->open($dl_tmpname, ZipArchive::RDONLY);
-
-    if ( $res === false ) {
-        @$zip->close();
-        @unlink($dl_tmpname);
-        ExitFailedRequest('Artifact archive failed to open');
-    }
-
-    // Find the main artifact file (not a companion like .sha256)
-    $artifact_filename = null;
-    $companion_files = array();
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $fname = $zip->statIndex($i)['name'];
-        if (preg_match('/\.sha256$/', $fname)) {
-            $companion_files[] = $fname;
-        } else {
-            if ($artifact_filename !== null) {
-                @$zip->close();
-                @unlink($dl_tmpname);
-                ExitFailedRequest('Artifact archive contains multiple main files - ' . strval($zip->numFiles));
-            }
-            $artifact_filename = $fname;
-        }
-    }
-
-    if ($artifact_filename === null) {
-        @$zip->close();
-        @unlink($dl_tmpname);
-        ExitFailedRequest('Artifact archive contains no main file');
-    }
-
-    $fstat = $zip->statIndex($zip->locateName($artifact_filename));
-
-    if ( strpos($artifact_filename, '/') !== false || strpos($artifact_filename, '\\') !== false ) {
-        @$zip->close();
-        @unlink($dl_tmpname);
-        ExitFailedRequest('Artifact archive contains invalid filename');
-    }
-
-    $artifact_tmpname = dirname($dl_tmpname) . DIRECTORY_SEPARATOR . $artifact_filename;
-    $ext_dir = dirname( $dl_tmpname );
-
-    // Extract the main artifact file
-    $exs = $zip->extractTo($ext_dir, array($artifact_filename));
-    // Also extract companion files (.sha256 checksums) alongside it
-    if (!empty($companion_files)) {
-        $zip->extractTo($ext_dir, $companion_files);
-    }
-    $zip->close();
-    @unlink($dl_tmpname);
-
-    if ( $exs === false || !file_exists($artifact_tmpname) ) {
-        ExitFailedRequest('Artifact extraction failed');
-    }
-
-    // more checks here... crc32b
-    $hash = hash_file('crc32b', $artifact_tmpname);
-    $array = unpack('N', pack('H*', $hash));
-    $crc32 = $array[1];
-    if ( $crc32 != $fstat['crc'] ) {
-        @unlink($artifact_tmpname);
-        ExitFailedRequest('Artifact file failed crc');
-    }
-
-    @unlink($dl_tmpname);
-    $dl_tmpname = $artifact_tmpname;
-    $basename = basename($dl_tmpname);
-} else {
-    $basename = $jdata['name'] . '.zip';
-}
-
-
-//$basename = basename($_SERVER['REQUEST_URI']);
-$uri_parts = pathinfo($basename);
-if (! isSafeExtension($uri_parts['extension'])) {
-    ExitFailedRequest("Failed to save {$basename} - Bad Extension\n");
-}
-
-if (MAX_CAPACITY_DELETE_OLDEST == true) {
-    MakeRoomForSnapshot(filesize($dl_tmpname));
-}
-
-$snapshot_ids = makeSnapshotFileIDs($basename);
-$snapshot_path = $snapshot_ids[0];
-$snapshot_url = $snapshot_ids[1];
-$snapshot_uid = $snapshot_ids[2];
-if (rename($dl_tmpname, $snapshot_path)) {
-    // Move companion files (.sha256 checksums) alongside the main artifact
-    if (isset($companion_files) && !empty($companion_files)) {
-        foreach ($companion_files as $cfile) {
-            $cfile_tmp = $ext_dir . DIRECTORY_SEPARATOR . $cfile;
-            if (file_exists($cfile_tmp)) {
-                $cfile_dest = $ScriptPath . '/' . UPLOAD_DIR . $snapshot_uid . '_' . $cfile;
-                rename($cfile_tmp, $cfile_dest);
-            }
-        }
-    }
-
-    $maxdays = DEFAULT_FILE_LIFETIME_DAYS;
-    if (isset($_SERVER['HTTP_MAX_DAYS'])) {
-        if (preg_match('/^[0-9]+$/i', $_SERVER['HTTP_MAX_DAYS']) === 1) {
-            $maxdays = intval($_SERVER['HTTP_MAX_DAYS']);
-        }
-    }
-    $maxdl = 0;
-    if (isset($_SERVER['HTTP_MAX_DOWNLOADS'])) {
-        if (preg_match('/^[0-9]+$/i', $_SERVER['HTTP_MAX_DOWNLOADS']) === 1) {
-            $maxdl = intval($_SERVER['HTTP_MAX_DOWNLOADS']);
-        }
-    }
-
-    echo($snapshot_url);
+$result = FetchGithubArtifact($ghaid, $unzip, $maxdays, $maxdl);
+if ($result[0] === 200) {
+    echo($result[1]);
     echo("\n");
-
-    AddNewSnapshot($basename, $snapshot_uid, $maxdays, $maxdl);
-    AddUploadLogRecord($snapshot_path);
+} elseif ($result[0] === 507) {
+    ExitFullStorage();
+} elseif ($result[0] === 400) {
+    ExitClientError($result[1]);
 } else {
-    ExitFailedRequest("Failed to save {$basename}\n");
-    unlink($dl_tmpname);
+    ExitFailedRequest($result[1]);
 }

@@ -203,14 +203,17 @@ function AddUploadLogRecord($filepath)
         $user_id = $_SESSION['mudletsnaps_user_id'];
     }
     
+    // gha_cron.php saves artifacts from the CLI, which has no client address.
+    $ip_addr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
+
     $stmt = $dbh->prepare(
-        'INSERT INTO `LogUploads` (`user_id`, `file_size`, `file_name`, `ip_addr`) 
+        'INSERT INTO `LogUploads` (`user_id`, `file_size`, `file_name`, `ip_addr`)
          VALUES (:uid, :size, :fname, :ip);'
     );
     $stmt->bindParam(':uid', $user_id, PDO::PARAM_INT);
     $stmt->bindParam(':size', $filesize, PDO::PARAM_INT);
     $stmt->bindParam(':fname', $filename, PDO::PARAM_STR);
-    $stmt->bindParam(':ip', $_SERVER['REMOTE_ADDR'], PDO::PARAM_STR);
+    $stmt->bindParam(':ip', $ip_addr, PDO::PARAM_STR);
     
     return $stmt->execute();
 }

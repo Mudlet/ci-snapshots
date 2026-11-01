@@ -1,7 +1,7 @@
 <?php
 /***
 *  This file has one task, scan for, process, and remove 'enqueued' github artifact transfer requests.
-*  Processing a queue entry means generating a request to our own endpoint.  because I'm lazy...
+*  Downloads run here rather than through github_artifact.php so they never hold a web PHP worker.
 *  Artifacts are available only after a workflow/job is complete, but can be queued long before that.
 *
 *  As it takes some time to process multiple files, care should be taken when deciding on a schedule for this job.
@@ -20,8 +20,7 @@ if (php_sapi_name() != 'cli') {
 }
 
 define("CI_SNAPSHOTS", true);
-require_once('lib/functions.common.php');
-require_once('lib/functions.http.php');
+require_once('lib/init.php');
 
 
 $JobLockMaxTTL = 1200; // seconds from lock creation to consider the job expired.
@@ -87,28 +86,6 @@ class GithubArtifactList {
 }
 
 
-function processSnapshotFetch( $url, $headers ) {
-    echo("Fetching:  $url \n");
-    $r = do_curl_get($url, $headers);
-    
-    if ($r === false) {
-        echo("Error while fetching\n");
-        return false;
-    }
-    
-    if ($r[2] !== 200) {
-        echo("Response not 200, is: ${r[2]}\n");
-        echo("Error Text:  $r[0] \n");
-        return false;
-    }
-    
-    if ($r[2] === 200) {
-        echo("Response:  ${r[0]} \n");
-    }
-    
-    return true;
-}
-
 function processQueueFile($filepath) {
     global $ghalObj;
     
@@ -149,27 +126,27 @@ function processQueueFile($filepath) {
     }
     
     
-    $queue_url = SITE_URL . 'github_artifact.php';
-    $headers = array();
-    $unzip = ($data['unzip']) ? '1' : '0';
-    
     if (isset($data['id'])) {
         $id = $data['id'];
     } else {
         $id = $ghalObj->getArtifactIdByName( $data['name'] );
     }
     
-    if (isset($data['maxdays'])) {
-        $headers[] = 'Max-Days: ' . strval( $data['maxdays'] );
+    $maxdays = isset($data['maxdays']) ? intval($data['maxdays']) : DEFAULT_FILE_LIFETIME_DAYS;
+    $maxdls = isset($data['maxdls']) ? intval($data['maxdls']) : 0;
+
+    echo("Fetching artifact ID# $id \n");
+    // A DB error must fail this entry only, not end the run and strand the lock.
+    try {
+        $result = FetchGithubArtifact(intval($id), (bool) $data['unzip'], $maxdays, $maxdls);
+    } catch (Throwable $e) {
+        $result = array(500, get_class($e) . ': ' . $e->getMessage());
     }
-    if (isset($data['maxdls'])) {
-        $headers[] = 'Max-Downloads: ' . strval( $data['maxdls'] );
-    }
-    
-    $url = $queue_url . '?id=' . strval($id) . '&unzip=' . $unzip;
-    
-    if ( processSnapshotFetch( $url, $headers ) ) {
+    if ($result[0] === 200) {
+        echo("Saved as:  {$result[1]} \n");
         unlink($filepath);
+    } else {
+        echo("Fetch failed with {$result[0]}:  {$result[1]} \n");
     }
     
     return true;
@@ -239,6 +216,8 @@ foreach( $files as $idx => $file ) {
 
     $ts = microtime(true);
     echo("Processing queue file:  $file \n");
+    // Refresh the lock so a long run of downloads is not mistaken for a dead job.
+    touch($job_lock);
 
     if ( !empty($m) ) {
         $p = null;
