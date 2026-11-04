@@ -52,7 +52,8 @@ if ( isset($_REQUEST['unzip']) ) {
 
 
 $artifact_queue_file = $ScriptPath . DIRECTORY_SEPARATOR . TEMP_DIR . GHA_QFILE_PREFIX . $artifact_name . GHA_QFILE_EXT ;
-$gha_list_url = GHA_LIST_URL . '?per_page=100&page=1';
+// Filter by name: the unfiltered list spans every artifact in the repo and GitHub often answers it with a 500.
+$gha_list_url = GHA_LIST_URL . '?per_page=100&name=' . rawurlencode($artifact_name);
 
 if ( file_exists($artifact_queue_file) ) {
     ExitFailedRequest('Artifact is already queued');
@@ -79,7 +80,6 @@ if ( !empty($list_data['artifacts']) ) {
     // artifact under the same name. Pick the newest by creation time rather than trusting the
     // order the API happens to return, so a re-run publishes its own build and not the stale
     // one from the earlier attempt.
-    // Only the first 100 entries are searched, so a name can still drop out of the window.
     foreach( $list_data['artifacts'] as $idx => $arti ) {
         if ( $artifact_name != $arti['name'] ) {
             continue;
